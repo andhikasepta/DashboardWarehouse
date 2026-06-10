@@ -16,14 +16,9 @@
         return new Intl.NumberFormat('id-ID').format(Math.round(num));
     }
 
-    // Helper: format currency like "Rp. 15,2 M"
+    // Helper: format currency like "Rp. 15.200.000"
     function formatCurrency(num) {
         if (isNaN(num)) return 'Rp 0';
-        if (num >= 1000000000) {
-            return 'Rp ' + (num / 1000000000).toFixed(1).replace('.', ',') + ' M';
-        } else if (num >= 1000000) {
-            return 'Rp ' + (num / 1000000).toFixed(1).replace('.', ',') + ' Jt';
-        }
         return 'Rp ' + formatNumber(num);
     }
 
@@ -40,8 +35,16 @@
         return sum;
     };
 
-    FormulaController.computeCount = function (data) {
-        return data ? data.length : 0;
+    FormulaController.computeCount = function (data, columnName) {
+        if (!data) return 0;
+        if (!columnName) return data.length;
+        var count = 0;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i][columnName] !== undefined && data[i][columnName] !== '') {
+                count++;
+            }
+        }
+        return count;
     };
 
     FormulaController.computeAverage = function (data, columnName) {
@@ -70,14 +73,14 @@
         console.log("Formula Controller: Updating cards from data...", headers);
 
         // 1. TOTAL ASSET
-        // Tries to sum a "Qty" or "Asset" column, otherwise just counts rows.
-        var assetCol = findColumnByKeyword(headers, ['qty', 'quantity', 'jumlah', 'asset']);
-        var totalAsset = assetCol ? FormulaController.computeSum(sheetData, assetCol) : FormulaController.computeCount(sheetData);
+        // Counts rows where "Nama Perangkat" is present
+        var assetCol = findColumnByKeyword(headers, ['nama perangkat', 'perangkat', 'nama', 'asset']);
+        var totalAsset = assetCol ? FormulaController.computeCount(sheetData, assetCol) : FormulaController.computeCount(sheetData);
         var cardAsset = document.getElementById('card-total-asset');
         if (cardAsset) cardAsset.textContent = formatNumber(totalAsset);
 
         // 2. TOTAL NBV
-        // Tries to sum an "NBV", "Value", "Harga", or "Price" column.
+        // Tries to sum an "NBV" column first, then "Value", "Harga", or "Price".
         var nbvCol = findColumnByKeyword(headers, ['nbv', 'value', 'harga', 'price', 'total']);
         var totalNbv = nbvCol ? FormulaController.computeSum(sheetData, nbvCol) : 0;
         var cardNbv = document.getElementById('card-total-nbv');
@@ -87,7 +90,7 @@
         // Tries to find "Utili" or "Space" column for percentage.
         var utilCol = findColumnByKeyword(headers, ['util', 'space', 'kapasitas', 'capacity']);
         var utilAvg = utilCol ? FormulaController.computeAverage(sheetData, utilCol) : 0;
-        
+
         // If data isn't a percentage (like 0.82 or 82), let's normalize it
         if (utilAvg > 1 && utilAvg <= 100) {
             // Already a percentage
@@ -97,7 +100,7 @@
             // Fallback random/mock calculation if no valid data found, just for visual representation
             utilAvg = sheetData.length > 0 ? Math.min(100, Math.max(10, (sheetData.length % 90) + 10)) : 0;
         }
-        
+
         var utilPercent = Math.round(utilAvg);
         var freePercent = 100 - utilPercent;
 
@@ -106,16 +109,32 @@
         var cardFreeText = document.getElementById('card-free-space-text');
         var cardFreeBar = document.getElementById('card-free-space-bar');
 
+        // Helper for Utilisasi progress bar colors
+        function getUtilisasiClass(percent) {
+            if (percent <= 50) return 'bg-success';
+            if (percent <= 80) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        // Helper for Free Space progress bar colors
+        function getFreeSpaceClass(percent) {
+            if (percent <= 29) return 'bg-danger';
+            if (percent <= 59) return 'bg-warning';
+            return 'bg-success';
+        }
+
         if (cardUtilText) cardUtilText.textContent = utilPercent + '%';
         if (cardUtilBar) {
             cardUtilBar.style.width = utilPercent + '%';
             cardUtilBar.setAttribute('aria-valuenow', utilPercent);
+            cardUtilBar.className = 'progress-bar ' + getUtilisasiClass(utilPercent);
         }
 
         if (cardFreeText) cardFreeText.textContent = freePercent + '%';
         if (cardFreeBar) {
             cardFreeBar.style.width = freePercent + '%';
             cardFreeBar.setAttribute('aria-valuenow', freePercent);
+            cardFreeBar.className = 'progress-bar ' + getFreeSpaceClass(freePercent);
         }
 
         // 5. LAST UPDATE
@@ -124,7 +143,7 @@
         if (cardUpdate) {
             var date = new Date();
             var months = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
-            cardUpdate.textContent = date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
+            cardUpdate.textContent = months[date.getMonth()] + ' ' + date.getFullYear();
         }
     };
 
