@@ -1,0 +1,628 @@
+/* =====================================================
+   EXCEL UPLOAD - Dashboard Charts
+   Premium upload UI with glassmorphism & micro-animations
+   ===================================================== */
+
+/* ---------- Upload Section Card ---------- */
+.upload-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-section .card {
+    border: none;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(78, 115, 223, 0.03) 0%, rgba(28, 200, 138, 0.03) 100%);
+    backdrop-filter: blur(10px);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.upload-section .card:hover {
+    box-shadow: 0 0.5rem 2rem rgba(78, 115, 223, 0.15) !important;
+}
+
+.upload-section .card-header {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+    padding: 1rem 1.5rem;
+}
+
+.upload-section .card-header h6 {
+    color: #fff !important;
+    letter-spacing: 0.5px;
+}
+
+.upload-section .card-header .btn-close-upload {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.upload-section .card-header .btn-close-upload:hover {
+    background: rgba(255,255,255,0.35);
+}
+
+/* ---------- Drop Zone ---------- */
+.upload-drop-zone {
+    border: 2.5px dashed #c5cae9;
+    border-radius: 1rem;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-drop-zone::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(78, 115, 223, 0.06) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.upload-drop-zone:hover::before,
+.upload-drop-zone.drag-over::before {
+    opacity: 1;
+}
+
+.upload-drop-zone:hover,
+.upload-drop-zone.drag-over {
+    border-color: #4e73df;
+    background: linear-gradient(135deg, #eef1ff 0%, #e3e9ff 100%);
+    transform: scale(1.01);
+    box-shadow: 0 0 0 4px rgba(78, 115, 223, 0.1);
+}
+
+.upload-drop-zone.drag-over {
+    border-style: solid;
+    animation: pulse-border 1.2s ease infinite;
+}
+
+@keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(78, 115, 223, 0.1); }
+    50% { box-shadow: 0 0 0 8px rgba(78, 115, 223, 0.15); }
+}
+
+.upload-drop-zone .upload-icon {
+    font-size: 3rem;
+    color: #4e73df;
+    margin-bottom: 1rem;
+    display: inline-block;
+    animation: float-icon 3s ease-in-out infinite;
+}
+
+@keyframes float-icon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.upload-drop-zone h5 {
+    font-weight: 700;
+    color: #2e384d;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.upload-drop-zone p {
+    color: #8898aa;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+}
+
+.upload-drop-zone .btn-browse {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.8rem;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
+}
+
+.upload-drop-zone .btn-browse:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
+}
+
+.upload-drop-zone .file-types {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    margin-top: 0.75rem;
+}
+
+/* ---------- Upload Progress ---------- */
+.upload-progress-container {
+    display: none;
+    margin-top: 1.5rem;
+}
+
+.upload-progress-container.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+.upload-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: #e9ecef;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.upload-progress-bar .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #4e73df 0%, #1cc88a 100%);
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.upload-file-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6e707e;
+}
+
+.upload-file-info .file-name {
+    font-weight: 600;
+    color: #2e384d;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.upload-file-info .file-size {
+    color: #adb5bd;
+}
+
+/* ---------- Sheet Selector & Controls ---------- */
+.upload-controls {
+    display: none;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eaecf4;
+    animation: fadeIn 0.4s ease;
+}
+
+.upload-controls.active {
+    display: block;
+}
+
+.upload-controls label {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #5a5c69;
+    margin-bottom: 0.4rem;
+}
+
+.upload-controls .form-control {
+    border-radius: 0.6rem;
+    border: 1.5px solid #d1d3e2;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.upload-controls .form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15);
+}
+
+/* ---------- Chart Type Selector ---------- */
+.chart-type-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.chart-type-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 2rem;
+    border: 1.5px solid #d1d3e2;
+    background: #fff;
+    color: #6e707e;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.chart-type-btn:hover {
+    border-color: #4e73df;
+    color: #4e73df;
+    background: #f0f3ff;
+}
+
+.chart-type-btn.active {
+    border-color: #4e73df;
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(78, 115, 223, 0.25);
+}
+
+.chart-type-btn i {
+    font-size: 0.85rem;
+}
+
+/* ---------- Generate Button ---------- */
+.btn-generate {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 2rem;
+    border-radius: 2rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(28, 200, 138, 0.3);
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.btn-generate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(28, 200, 138, 0.4);
+}
+
+.btn-generate:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-generate i {
+    margin-right: 0.4rem;
+}
+
+/* ---------- Data Preview Table ---------- */
+.data-preview-section {
+    display: none;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.4s ease;
+}
+
+.data-preview-section.active {
+    display: block;
+}
+
+.data-preview-section .preview-title {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #5a5c69;
+    margin-bottom: 0.5rem;
+}
+
+.data-preview-table {
+    width: 100%;
+    font-size: 0.78rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    border: 1px solid #eaecf4;
+}
+
+.data-preview-table thead th {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    color: #fff;
+    font-weight: 700;
+    padding: 0.6rem 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.72rem;
+    border: none;
+    white-space: nowrap;
+}
+
+.data-preview-table tbody td {
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #f0f2f8;
+    color: #5a5c69;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.data-preview-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-preview-table tbody tr:hover {
+    background: #f8f9ff;
+}
+
+.data-preview-more {
+    text-align: center;
+    padding: 0.6rem;
+    font-size: 0.78rem;
+    color: #adb5bd;
+    font-style: italic;
+}
+
+/* ---------- Dynamic Charts Container ---------- */
+#dynamic-charts-container {
+    min-height: 0;
+}
+
+#dynamic-charts-container .chart-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+#dynamic-charts-container .chart-card:nth-child(1) { animation-delay: 0.1s; }
+#dynamic-charts-container .chart-card:nth-child(2) { animation-delay: 0.2s; }
+#dynamic-charts-container .chart-card:nth-child(3) { animation-delay: 0.3s; }
+#dynamic-charts-container .chart-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-card .card {
+    border: none;
+    border-radius: 1rem;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    overflow: hidden;
+}
+
+.chart-card .card:hover {
+    box-shadow: 0 0.5rem 2rem rgba(0,0,0,0.08) !important;
+    transform: translateY(-3px);
+}
+
+.chart-card .card-header {
+    background: #fff;
+    border-bottom: 1px solid #eaecf4;
+    padding: 1rem 1.25rem;
+}
+
+.chart-card .card-header h6 {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.chart-card .card-header .chart-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.chart-card .card-header .chart-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    border-radius: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.chart-card .card-body {
+    padding: 1.25rem;
+}
+
+.chart-card .chart-area {
+    position: relative;
+    height: 320px;
+}
+
+/* Chart type badge */
+.chart-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+    background: #f0f3ff;
+    color: #4e73df;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Empty State ---------- */
+.dynamic-charts-empty {
+    display: none;
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #c9cdd4;
+}
+
+.dynamic-charts-empty.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+.dynamic-charts-empty i {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.dynamic-charts-empty h5 {
+    font-weight: 700;
+    color: #b7b9cc;
+    margin-bottom: 0.5rem;
+}
+
+.dynamic-charts-empty p {
+    font-size: 0.85rem;
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease infinite;
+    border-radius: 0.5rem;
+}
+
+/* ---------- Toast Notification ---------- */
+.upload-toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.8rem;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.upload-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.upload-toast.success {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+}
+
+.upload-toast.error {
+    background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);
+}
+
+.upload-toast.info {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .upload-drop-zone {
+        padding: 1.5rem 1rem;
+    }
+
+    .upload-drop-zone .upload-icon {
+        font-size: 2rem;
+    }
+
+    .chart-type-selector {
+        gap: 0.35rem;
+    }
+
+    .chart-type-btn {
+        padding: 0.3rem 0.7rem;
+        font-size: 0.72rem;
+    }
+
+    .chart-card .chart-area {
+        height: 250px;
+    }
+}
+
+/* ---------- Upload Modal Overlay ---------- */
+#uploadExcelModal .modal-dialog {
+    max-width: 960px;
+}
+
+.upload-modal-content {
+    border: none;
+    border-radius: 1.2rem;
+    overflow: hidden;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.2);
+}
+
+.upload-modal-header {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    border: none;
+    padding: 1.1rem 1.5rem;
+}
+
+.upload-modal-header .modal-title {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+}
+
+.upload-modal-header .close {
+    color: #fff;
+    text-shadow: none;
+    opacity: 0.8;
+    font-size: 1.4rem;
+}
+
+.upload-modal-header .close:hover {
+    opacity: 1;
+}
+
+.upload-modal-body {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(78, 115, 223, 0.02) 0%, rgba(28, 200, 138, 0.02) 100%);
+}
+
+#uploadExcelModal .modal-backdrop,
+.modal-backdrop.show {
+    backdrop-filter: blur(4px);
+}
+
+/* Upload controls inside modal — always visible */
+#uploadExcelModal .upload-controls {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+@media (max-width: 576px) {
+    #uploadExcelModal .modal-dialog {
+        margin: 0.5rem;
+    }
+    .upload-modal-body {
+        padding: 1rem;
+    }
+}

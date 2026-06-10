@@ -27,24 +27,24 @@ function number_format(number, decimals, dec_point, thousands_sep) {
   return s.join(dec);
 }
 
-// Horizontal Bar Chart Example
+// Horizontal Bar Chart — starts empty, populated by Excel upload
 var ctx = document.getElementById("myHorizontalBarChart");
 var myHorizontalBarChart = new Chart(ctx, {
   type: 'horizontalBar',
   data: {
-    labels: ["Enterprise Sales", "Delivery Operation", "NOC", "SCM", "PMO"],
+    labels: [],
     datasets: [{
       label: "Qty (Unit)",
       backgroundColor: "#4e73df",
       hoverBackgroundColor: "#2e59d9",
       borderColor: "#4e73df",
-      data: [55, 30, 15, 5, 1],
+      data: [],
     }, {
       label: "NBV (Rp)",
       backgroundColor: "#1cc88a",
       hoverBackgroundColor: "#17a673",
       borderColor: "#1cc88a",
-      data: [45, 40, 25, 10, 10],
+      data: [],
     }],
   },
   options: {
@@ -61,8 +61,7 @@ var myHorizontalBarChart = new Chart(ctx, {
       xAxes: [{
         ticks: {
           min: 0,
-          max: 100,
-          maxTicksLimit: 5,
+          maxTicksLimit: 12,
           padding: 10,
           callback: function (value, index, values) {
             return number_format(value);
@@ -82,7 +81,7 @@ var myHorizontalBarChart = new Chart(ctx, {
           drawBorder: false
         },
         ticks: {
-          maxTicksLimit: 6
+          maxTicksLimit: 12
         },
         maxBarThickness: 25,
       }],
@@ -122,26 +121,26 @@ var myHorizontalBarChart = new Chart(ctx, {
   }
 });
 
-// Aging Perangkat Chart Example (Single Data Horizontal Bar Chart)
+// Aging Perangkat Chart — starts empty
 var ctxAging = document.getElementById("agingBarChart");
 if (ctxAging) {
-  new Chart(ctxAging, {
+  window.agingBarChart = new Chart(ctxAging, {
     type: 'horizontalBar',
     data: {
-      labels: ["< 1 Tahun", "1-3 Tahun", "3-5 Tahun", "> 5 Tahun"],
+      labels: [],
       datasets: [{
         label: "Aging",
         backgroundColor: "#f6c23e",
         hoverBackgroundColor: "#dda20a",
         borderColor: "#f6c23e",
-        data: [20, 35, 10, 7],
+        data: [],
       }],
     },
     options: {
       maintainAspectRatio: false,
       layout: { padding: { left: 10, right: 25, top: 25, bottom: 0 } },
       scales: {
-        xAxes: [{ ticks: { min: 0, max: 50, maxTicksLimit: 5, padding: 10 }, gridLines: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2], zeroLineBorderDash: [2] } }],
+        xAxes: [{ ticks: { min: 0, maxTicksLimit: 5, padding: 10 }, gridLines: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2], zeroLineBorderDash: [2] } }],
         yAxes: [{ gridLines: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 6 }, maxBarThickness: 25 }],
       },
       legend: { display: false },
