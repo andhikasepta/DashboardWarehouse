@@ -74,7 +74,7 @@ if (ctxAging) {
     data: {
       labels: ["< 1 Year", "1-3 Years", "> 3 Years"],
       datasets: [{
-        label: "Aging",
+        label: "Qty",
         backgroundColor: "#f6c23e",
         hoverBackgroundColor: "#dda20a",
         borderColor: "#f6c23e",

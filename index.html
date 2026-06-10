@@ -32,7 +32,7 @@
                     <form
                         class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
-                            <img src="img/Lintasarta.png" alt="" width="130px">
+                            <img src="img/Lintasarta.png" alt="" width="150px">
                         </div>
                     </form>
                     <ul class="navbar-nav ml-auto">
@@ -257,6 +257,7 @@
                                     </h6>
                                 </div>
                                 <div class="card-body d-flex flex-column">
+                                    <div id="rack-status-dots" class="d-flex justify-content-end mb-2"></div>
                                     <div class="table-responsive flex-grow-1" style="overflow-y: auto; height: 0;">
                                         <table class="table" width="100%" cellspacing="0">
                                             <thead>
@@ -271,7 +272,6 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -378,16 +378,17 @@
 
         <!-- Page level plugins -->
         <script src="vendor/chart.js/Chart.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@0.7.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
         <!-- SheetJS (xlsx) for Excel parsing -->
         <!-- TODO(security): Pin version and add SRI integrity hash for production -->
         <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
         <!-- Page level custom scripts -->
-        <script src="js/formula-controller.js"></script>
-        <script src="js/excel-upload.js"></script>
-        <script src="js/demo/chart-bar-demo.js"></script>
-        <script src="js/demo/chart-horizontal-bar-demo.js"></script>
+        <script src="js/formula-controller.js?v=5"></script>
+        <script src="js/excel-upload.js?v=5"></script>
+        <script src="js/demo/chart-bar-demo.js?v=5"></script>
+        <script src="js/demo/chart-horizontal-bar-demo.js?v=5"></script>
 
         <!-- Close modal after chart generation -->
         <script>

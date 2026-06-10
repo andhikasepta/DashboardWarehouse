@@ -35,12 +35,14 @@ var myBarChart = new Chart(ctx, {
     labels: [],
     datasets: [{
       label: "Qty (Unit)",
+      yAxisID: "y-axis-qty",
       backgroundColor: "#4e73df",
       hoverBackgroundColor: "#2e59d9",
       borderColor: "#4e73df",
       data: [],
     }, {
       label: "NBV (Rp)",
+      yAxisID: "y-axis-nbv",
       backgroundColor: "#1cc88a",
       hoverBackgroundColor: "#17a673",
       borderColor: "#1cc88a",
@@ -67,11 +69,13 @@ var myBarChart = new Chart(ctx, {
           drawBorder: false
         },
         ticks: {
-          maxTicksLimit: 3
+          maxTicksLimit: 6
         },
         maxBarThickness: 25,
       }],
       yAxes: [{
+        id: "y-axis-qty",
+        position: "left",
         ticks: {
           min: 0,
           maxTicksLimit: 5,
@@ -87,7 +91,25 @@ var myBarChart = new Chart(ctx, {
           borderDash: [2],
           zeroLineBorderDash: [2]
         }
+      }, {
+        id: "y-axis-nbv",
+        position: "right",
+        ticks: {
+          min: 0,
+          maxTicksLimit: 5,
+          padding: 10,
+          callback: function (value, index, values) {
+            if (value >= 1000000) {
+                return 'Rp ' + number_format(value / 1000000) + 'M';
+            }
+            return 'Rp ' + number_format(value);
+          }
+        },
+        gridLines: {
+          drawOnChartArea: false
+        }
       }],
+
     },
     legend: {
       display: true,
@@ -96,6 +118,8 @@ var myBarChart = new Chart(ctx, {
       }
     },
     tooltips: {
+      mode: 'index',
+      intersect: false,
       titleMarginBottom: 10,
       titleFontColor: '#6e707e',
       titleFontSize: 14,
@@ -120,6 +144,27 @@ var myBarChart = new Chart(ctx, {
         }
       }
     },
+    plugins: {
+      datalabels: {
+        color: '#5a5c69',
+        anchor: 'end',
+        align: 'top',
+        font: {
+            size: 10,
+            weight: 'bold'
+        },
+        formatter: function(value, context) {
+          if (value === 0 || value == null) return '';
+          var datasetLabel = context.dataset.label || '';
+          if (datasetLabel.includes('NBV')) {
+            if (value >= 1000000000) return number_format(value / 1000000000, 1) + 'B';
+            if (value >= 1000000) return number_format(value / 1000000, 1) + 'M';
+            return number_format(value);
+          }
+          return number_format(value);
+        }
+      }
+    }
   }
 });
 

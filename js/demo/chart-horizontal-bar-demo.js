@@ -35,12 +35,14 @@ var myHorizontalBarChart = new Chart(ctx, {
     labels: [],
     datasets: [{
       label: "Qty (Unit)",
+      xAxisID: "x-axis-qty",
       backgroundColor: "#4e73df",
       hoverBackgroundColor: "#2e59d9",
       borderColor: "#4e73df",
       data: [],
     }, {
       label: "NBV (Rp)",
+      xAxisID: "x-axis-nbv",
       backgroundColor: "#1cc88a",
       hoverBackgroundColor: "#17a673",
       borderColor: "#1cc88a",
@@ -59,9 +61,12 @@ var myHorizontalBarChart = new Chart(ctx, {
     },
     scales: {
       xAxes: [{
+        id: "x-axis-qty",
+        position: "bottom",
+        type: 'linear',
         ticks: {
           min: 0,
-          maxTicksLimit: 12,
+          maxTicksLimit: 5,
           padding: 10,
           callback: function (value, index, values) {
             return number_format(value);
@@ -73,6 +78,24 @@ var myHorizontalBarChart = new Chart(ctx, {
           drawBorder: false,
           borderDash: [2],
           zeroLineBorderDash: [2]
+        }
+      }, {
+        id: "x-axis-nbv",
+        position: "top",
+        type: 'linear',
+        ticks: {
+          min: 0,
+          maxTicksLimit: 5,
+          padding: 10,
+          callback: function (value, index, values) {
+            if (value >= 1000000) {
+              return 'Rp ' + number_format(value / 1000000) + 'M';
+            }
+            return 'Rp ' + number_format(value);
+          }
+        },
+        gridLines: {
+          drawOnChartArea: false
         }
       }],
       yAxes: [{
@@ -93,6 +116,8 @@ var myHorizontalBarChart = new Chart(ctx, {
       }
     },
     tooltips: {
+      mode: 'index',
+      intersect: false,
       titleMarginBottom: 10,
       titleFontColor: '#6e707e',
       titleFontSize: 14,
@@ -107,7 +132,7 @@ var myHorizontalBarChart = new Chart(ctx, {
       callbacks: {
         label: function (tooltipItem, chart) {
           var datasetLabel = chart.datasets[tooltipItem.datasetIndex].label || '';
-          var val = number_format(tooltipItem.yLabel);
+          var val = number_format(tooltipItem.xLabel);
           if (datasetLabel === "Qty (Unit)") {
             return datasetLabel + ' : ' + val + ' Unit';
           } else if (datasetLabel === "NBV (Rp)") {
@@ -117,6 +142,27 @@ var myHorizontalBarChart = new Chart(ctx, {
         }
       }
     },
+    plugins: {
+      datalabels: {
+        color: '#5a5c69',
+        anchor: 'end',
+        align: 'right',
+        font: {
+          size: 10,
+          weight: 'bold'
+        },
+        formatter: function (value, context) {
+          if (value === 0 || value == null) return '';
+          var datasetLabel = context.dataset.label || '';
+          if (datasetLabel.includes('NBV')) {
+            if (value >= 1000000000) return number_format(value / 1000000000, 1) + 'B';
+            if (value >= 1000000) return number_format(value / 1000000, 1) + 'M';
+            return number_format(value);
+          }
+          return number_format(value);
+        }
+      }
+    }
 
   }
 });
@@ -129,7 +175,7 @@ if (ctxAging) {
     data: {
       labels: [],
       datasets: [{
-        label: "Aging",
+        label: "Qty",
         backgroundColor: "#f6c23e",
         hoverBackgroundColor: "#dda20a",
         borderColor: "#f6c23e",
