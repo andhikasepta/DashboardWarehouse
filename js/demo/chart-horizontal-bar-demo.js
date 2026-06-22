@@ -104,7 +104,7 @@ var myHorizontalBarChart = new Chart(ctx, {
           drawBorder: false
         },
         ticks: {
-          maxTicksLimit: 12
+          fontSize: 11
         },
         maxBarThickness: 25,
       }],
@@ -193,6 +193,21 @@ if (ctxAging) {
       tooltips: {
         titleMarginBottom: 10, titleFontColor: '#6e707e', titleFontSize: 14, backgroundColor: "rgb(255,255,255)", bodyFontColor: "#858796", borderColor: '#dddfeb', borderWidth: 1, xPadding: 15, yPadding: 15, displayColors: false, caretPadding: 10
       },
+      plugins: {
+        datalabels: {
+          color: '#5a5c69',
+          anchor: 'end',
+          align: 'right',
+          font: {
+            size: 10,
+            weight: 'bold'
+          },
+          formatter: function(value, context) {
+            if (!value) return '';
+            return number_format(value);
+          }
+        }
+      }
     }
   });
 }

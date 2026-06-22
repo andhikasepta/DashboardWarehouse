@@ -15,9 +15,18 @@
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="css/excel-upload.css?v=<?= time() ?>" rel="stylesheet">
     
     <!-- DataTables CSS -->
     <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        /* Basic Select2 Bootstrap 4 overrides */
+        .select2-container .select2-selection--single { height: 31px; border: 1px solid #d1d3e2; border-radius: 0.2rem; display: flex; align-items: center; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 29px; }
+    </style>
     
     <style>
         .nav-tabs .nav-link { font-weight: bold; }
@@ -42,7 +51,7 @@
                         </div>
                     </form>
                     <ul class="navbar-nav ml-auto">
-                        <!-- Dashboard Button -->
+                        <!-- Navigation Links -->
                         <li class="nav-item">
                             <a class="nav-link" href="index.php">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 font-weight-bold">
@@ -50,26 +59,21 @@
                                 </span>
                             </a>
                         </li>
-                        
-                        <div class="topbar-divider d-none d-sm-block"></div>
-                        
-                        <!-- Nav Item - User Information -->
-                        <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                        <li class="nav-item active">
+                            <a class="nav-link" href="master_data.php">
+                                <span class="mr-2 d-none d-lg-inline text-primary font-weight-bold">
+                                    <i class="fas fa-database mr-1"></i> Master Data
+                                </span>
                             </a>
-                            <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#uploadExcelModal">
-                                    <i class="fas fa-file-excel fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Upload Excel
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#deleteDataModal">
-                                    <i class="fas fa-trash fa-sm fa-fw mr-2 text-danger"></i>
-                                    Delete Data
-                                </a>
-                            </div>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- User Information (Static) -->
+                        <li class="nav-item d-flex align-items-center">
+                            <span class="nav-link pr-0">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                            </span>
                         </li>
                     </ul>
                 </nav>
@@ -77,7 +81,17 @@
 
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
-                    <h1 class="h3 mb-4 text-gray-800">Master Data</h1>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Master Data</h1>
+                        <div>
+                            <button class="btn btn-success mr-2" data-toggle="modal" data-target="#uploadExcelModal">
+                                <i class="fas fa-file-excel mr-1"></i> Upload Excel
+                            </button>
+                            <button class="btn btn-danger" data-toggle="modal" data-target="#deleteDataModal">
+                                <i class="fas fa-trash-alt mr-1"></i> Delete Data
+                            </button>
+                        </div>
+                    </div>
 
                     <!-- Tabs -->
                     <ul class="nav nav-tabs mb-4" id="masterDataTabs" role="tablist">
@@ -113,28 +127,26 @@
                                                 <option value="">All Sub Locations</option>
                                             </select>
                                         </div>
+                                        <div class="col-md-6 d-flex align-items-end justify-content-end" id="assetSearchContainer">
+                                        </div>
                                     </div>
                                     
                                     <div class="table-responsive">
                                         <table class="table table-bordered table-sm" id="dataTableAsset" width="100%" cellspacing="0">
                                             <thead>
                                                 <tr>
-                                                    <th>Nama Perangkat</th>
                                                     <th>Spec Code</th>
+                                                    <th>Spec Name</th>
                                                     <th>Reg No</th>
-                                                    <th>Kategori</th>
-                                                    <th>IN</th>
-                                                    <th>OUT</th>
                                                     <th>Asset Planner Org</th>
-                                                    <th>GR Date</th>
                                                     <th>NBV</th>
-                                                    <th>Since</th>
-                                                    <th>Days</th>
+                                                    <th>SO Result</th>
+                                                    <th>SO Location</th>
                                                     <th>Range</th>
                                                     <th>Sub Location</th>
-                                                    <th>Grup Building</th>
-                                                    <th>Grup Rack</th>
+                                                    <th>Category</th>
                                                     <th>Periode Group</th>
+                                                    <th>Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -163,10 +175,12 @@
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <label>Rack:</label>
+                                            <label>Rack Name:</label>
                                             <select id="filterRackName" class="form-control form-control-sm">
                                                 <option value="">All Racks</option>
                                             </select>
+                                        </div>
+                                        <div class="col-md-6 d-flex align-items-end justify-content-end" id="rackSearchContainer">
                                         </div>
                                     </div>
                                     
@@ -209,32 +223,38 @@
     <!-- Delete Data Modal-->
     <div class="modal fade" id="deleteDataModal" tabindex="-1" role="dialog" aria-labelledby="deleteDataModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="deleteDataModalLabel">Delete Data by Period</h5>
-                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+        <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+            <div class="modal-content upload-modal-content">
+                <div class="modal-header upload-modal-header" style="background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);">
+                    <h5 class="modal-title text-white" id="deleteDataModalLabel">
+                        <i class="fas fa-trash-alt mr-2 text-white"></i>Delete Data by Period
+                    </h5>
+                    <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <p>Select a period to delete all its associated data from the database.</p>
-                    <div class="form-group">
-                        <label for="deleteMonthSelect">Bulan</label>
-                        <select class="form-control" id="deleteMonthSelect">
-                            <option value="">-- Pilih Bulan --</option>
-                        </select>
+                <div class="modal-body upload-modal-body">
+                    <div class="p-3">
+                        <p class="text-center text-gray-600 mb-4">Select a period to permanently delete all its associated data from the database.</p>
+                        <div class="form-group mb-3">
+                            <label for="deleteMonthSelect" class="small font-weight-bold text-gray-600">Bulan</label>
+                            <select class="form-control form-control-sm" id="deleteMonthSelect">
+                                <option value="">-- Pilih Bulan --</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-4">
+                            <label for="deleteYearSelect" class="small font-weight-bold text-gray-600">Tahun</label>
+                            <select class="form-control form-control-sm" id="deleteYearSelect">
+                                <option value="">-- Pilih Tahun --</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end mt-4">
+                            <button class="btn btn-light px-4 mr-2" type="button" data-dismiss="modal" style="border-radius: 6px; font-weight: 600;">Cancel</button>
+                            <button class="btn btn-danger px-4" type="button" id="btn-confirm-delete" style="border-radius: 6px; font-weight: 600; box-shadow: 0 4px 10px rgba(231,74,59,0.3);">
+                                <i class="fas fa-trash mr-1"></i> Delete Data
+                            </button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="deleteYearSelect">Tahun</label>
-                        <select class="form-control" id="deleteYearSelect">
-                            <option value="">-- Pilih Tahun --</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <button class="btn btn-danger" type="button" id="btn-confirm-delete">Delete Data</button>
                 </div>
             </div>
         </div>
@@ -274,7 +294,7 @@
                                     <i class="fas fa-folder-open mr-1"></i> Browse Files
                                 </button>
                                 <div class="file-types">
-                                    Supported: .xlsx, .xls, .csv &bull; Max 10MB
+                                    Supported: .xlsx, .xls, .csv &bull; Max 100MB
                                 </div>
                             </div>
 
@@ -317,10 +337,11 @@
     
     <!-- SheetJS (xlsx) for Excel parsing -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script src="js/excel-upload.js?v=6"></script>
-    
-    <!-- Custom JS for Master Data -->
-    <script src="js/master-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="js/excel-upload.js?v=<?= time() ?>"></script>
+    <script src="js/formula-controller.js?v=<?= time() ?>"></script>
+    <script src="js/master-data.js?v=<?= time() ?>"></script>
     
     <script>
         // Close modal after chart generation/saving

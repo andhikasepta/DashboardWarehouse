@@ -10,21 +10,31 @@ header('Content-Type: application/json');
 function formatPeriode($rawDate) {
     if (!$rawDate) return 'Unknown Period';
     
-    // Try to parse standard formats or ISO dates
-    $timestamp = strtotime($rawDate);
+    $str = strtoupper(trim((string)$rawDate));
+    $currentYear = date('Y');
     
-    if (!$timestamp) {
-        // If it's something like 12/06/2026 (DD/MM/YYYY)
-        $parts = explode('/', $rawDate);
-        if (count($parts) === 3) {
-            $timestamp = strtotime($parts[2] . '-' . $parts[1] . '-' . $parts[0]);
+    $months = [
+        'JAN' => 'January',
+        'FEB' => 'February',
+        'MAR' => 'March',
+        'APR' => 'April',
+        'MEI' => 'May',
+        'JUN' => 'June',
+        'JUL' => 'July',
+        'AGU' => 'August',
+        'SEP' => 'September',
+        'OKT' => 'October',
+        'NOV' => 'November',
+        'DES' => 'December'
+    ];
+    
+    foreach ($months as $abbr => $full) {
+        if (strpos($str, $abbr) !== false) {
+            return $full . ' ' . $currentYear;
         }
     }
     
-    if ($timestamp) {
-        return date('F Y', $timestamp); // e.g. "June 2026"
-    }
-    return (string)$rawDate;
+    return 'Unknown Period';
 }
 
 function getValCI($row, $key) {
@@ -42,87 +52,159 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (is_array($data)) {
         try {
-            $pdo->beginTransaction();
-            
-            // First pass: identify unique periods in the uploaded data
-            $uploadedPeriods = [];
-            foreach ($data as $row) {
-                // look for 'periode' key ignoring case
-                $periodeRaw = null;
-                foreach ($row as $k => $v) {
-                    if (strcasecmp($k, 'periode') === 0) {
-                        $periodeRaw = $v;
-                        break;
+            $action = isset($data['action']) ? $data['action'] : null;
+
+            if ($action) {
+                // Batch Upload Protocol
+                if ($action === 'init') {
+                    $periods = isset($data['periods']) ? $data['periods'] : [];
+                    if (!is_array($periods)) {
+                        echo json_encode(['status' => 'error', 'message' => 'Invalid periods parameter']);
+                        exit;
                     }
+                    // Delete existing records for these periods
+                    if (!empty($periods)) {
+                        $placeholders = implode(',', array_fill(0, count($periods), '?'));
+                        $delStmt = $pdo->prepare("DELETE FROM assets WHERE periode_group IN ($placeholders)");
+                        $delStmt->execute($periods);
+                    }
+                    echo json_encode(['status' => 'success', 'message' => 'Periods initialized successfully']);
+                } elseif ($action === 'append') {
+                    $rows = isset($data['data']) ? $data['data'] : [];
+                    if (!is_array($rows)) {
+                        echo json_encode(['status' => 'error', 'message' => 'Invalid data parameter']);
+                        exit;
+                    }
+
+                    if (!empty($rows)) {
+                        $pdo->beginTransaction();
+                        $stmt = $pdo->prepare("INSERT INTO assets 
+                            (spec_code, spec_name, reg_no, asset_planner_organization, nbv, so_result, so_location, `range`, sub_location, category, periode, periode_group, raw_data) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        
+                        foreach ($rows as $row) {
+                            $periodeRaw = getValCI($row, 'periode');
+                            $periodeGroup = formatPeriode($periodeRaw);
+                            $rawData = json_encode($row);
+
+                            $nbv = getValCI($row, 'nbv');
+                            $nbv = is_numeric($nbv) ? (float)$nbv : 0;
+
+                            $stmt->execute([
+                                getValCI($row, 'spec_code'),
+                                getValCI($row, 'spec_name'),
+                                getValCI($row, 'reg_no'),
+                                getValCI($row, 'asset_planner_organization'),
+                                $nbv,
+                                getValCI($row, 'so_result'),
+                                getValCI($row, 'so_location'),
+                                getValCI($row, 'range'),
+                                getValCI($row, 'sub_location'),
+                                getValCI($row, 'category'),
+                                $periodeRaw,
+                                $periodeGroup,
+                                $rawData
+                            ]);
+                        }
+                        $pdo->commit();
+                    }
+                    echo json_encode(['status' => 'success', 'message' => 'Batch appended successfully']);
+                } elseif ($action === 'finalize') {
+                    // Get all periods for response
+                    $periodStmt = $pdo->query("SELECT DISTINCT periode_group FROM assets WHERE periode_group IS NOT NULL");
+                    $periods = $periodStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                    echo json_encode([
+                        'status' => 'success', 
+                        'message' => 'Data saved and finalized successfully',
+                        'periods' => $periods
+                    ]);
+                } else {
+                    echo json_encode(['status' => 'error', 'message' => 'Unknown action: ' . htmlspecialchars($action)]);
+                }
+            } else {
+                // Legacy Single Request Upload
+                $pdo->beginTransaction();
+                
+                // First pass: identify unique periods in the uploaded data
+                $uploadedPeriods = [];
+                foreach ($data as $row) {
+                    $periodeRaw = null;
+                    foreach ($row as $k => $v) {
+                        if (strcasecmp($k, 'periode') === 0) {
+                            $periodeRaw = $v;
+                            break;
+                        }
+                    }
+                    
+                    $periodeGroup = formatPeriode($periodeRaw);
+                    $uploadedPeriods[$periodeGroup] = true;
                 }
                 
-                $periodeGroup = formatPeriode($periodeRaw);
-                $uploadedPeriods[$periodeGroup] = true;
-            }
-            
-            // Delete existing records for these periods to avoid duplicates
-            if (!empty($uploadedPeriods)) {
-                $placeholders = implode(',', array_fill(0, count($uploadedPeriods), '?'));
-                $delStmt = $pdo->prepare("DELETE FROM assets WHERE periode_group IN ($placeholders)");
-                $delStmt->execute(array_keys($uploadedPeriods));
-            }
+                // Delete existing records for these periods to avoid duplicates
+                if (!empty($uploadedPeriods)) {
+                    $placeholders = implode(',', array_fill(0, count($uploadedPeriods), '?'));
+                    $delStmt = $pdo->prepare("DELETE FROM assets WHERE periode_group IN ($placeholders)");
+                    $delStmt->execute(array_keys($uploadedPeriods));
+                }
 
-            $stmt = $pdo->prepare("INSERT INTO assets 
-                (nama_perangkat, spec_code, reg_no, kategori, `in`, `out`, asset_planner_organization, gr_date, nbv, since, days, `range`, sub_location, grup_building, grup_rack, periode, periode_group, raw_data) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            
-            foreach ($data as $row) {
-                $periodeRaw = getValCI($row, 'periode');
-                $periodeGroup = formatPeriode($periodeRaw);
-                $rawData = json_encode($row);
+                $stmt = $pdo->prepare("INSERT INTO assets 
+                    (spec_code, spec_name, reg_no, asset_planner_organization, nbv, so_result, so_location, `range`, sub_location, category, periode, periode_group, raw_data) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                
+                foreach ($data as $row) {
+                    $periodeRaw = getValCI($row, 'periode');
+                    $periodeGroup = formatPeriode($periodeRaw);
+                    $rawData = json_encode($row);
 
-                $nbv = getValCI($row, 'nbv');
-                $nbv = is_numeric($nbv) ? (float)$nbv : 0;
+                    $nbv = getValCI($row, 'nbv');
+                    $nbv = is_numeric($nbv) ? (float)$nbv : 0;
 
-                $stmt->execute([
-                    getValCI($row, 'nama_perangkat'),
-                    getValCI($row, 'spec_code'),
-                    getValCI($row, 'reg_no'),
-                    getValCI($row, 'kategori'),
-                    getValCI($row, 'in'),
-                    getValCI($row, 'out'),
-                    getValCI($row, 'asset_planner_organization'),
-                    getValCI($row, 'gr_date'),
-                    $nbv,
-                    getValCI($row, 'since'),
-                    getValCI($row, 'days'),
-                    getValCI($row, 'range'),
-                    getValCI($row, 'sub_location'),
-                    getValCI($row, 'grup_building'),
-                    getValCI($row, 'grup_rack'),
-                    $periodeRaw,
-                    $periodeGroup,
-                    $rawData
+                    $stmt->execute([
+                        getValCI($row, 'spec_code'),
+                        getValCI($row, 'spec_name'),
+                        getValCI($row, 'reg_no'),
+                        getValCI($row, 'asset_planner_organization'),
+                        $nbv,
+                        getValCI($row, 'so_result'),
+                        getValCI($row, 'so_location'),
+                        getValCI($row, 'range'),
+                        getValCI($row, 'sub_location'),
+                        getValCI($row, 'category'),
+                        $periodeRaw,
+                        $periodeGroup,
+                        $rawData
+                    ]);
+                }
+                $pdo->commit();
+                
+                // Get all periods for response
+                $periodStmt = $pdo->query("SELECT DISTINCT periode_group FROM assets WHERE periode_group IS NOT NULL");
+                $periods = $periodStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                echo json_encode([
+                    'status' => 'success', 
+                    'message' => 'Data saved successfully',
+                    'periods' => $periods
                 ]);
             }
-            $pdo->commit();
-            
-            // Now that data is inserted, run the rebuild logic
-            require_once 'rebuild_in_out.php';
-            rebuildInOutStatus($pdo);
-            
-            // Get all periods for response
-            $periodStmt = $pdo->query("SELECT DISTINCT periode_group FROM assets ORDER BY created_at DESC");
-            $periods = $periodStmt->fetchAll(PDO::FETCH_COLUMN);
-
-            echo json_encode([
-                'status' => 'success', 
-                'message' => 'Data saved successfully',
-                'periods' => $periods
-            ]);
         } catch(PDOException $e) {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            // TODO(security): Log detailed error server-side and show generic message to the client
+            error_log("Database error during upload: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            echo json_encode(['status' => 'error', 'message' => 'A database error occurred while saving the data.']);
+        } catch(Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("General error during upload: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            echo json_encode(['status' => 'error', 'message' => 'An error occurred while saving the data.']);
         }
     } else {
-         echo json_encode(['status' => 'error', 'message' => 'Invalid data format']);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid data format']);
     }
 } else {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request method']);
 }
-?>

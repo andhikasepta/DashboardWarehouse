@@ -150,7 +150,7 @@
 
         // 1. TOTAL ASSET
         // Counts rows where "Nama Perangkat" is present
-        var assetCol = findColumnByKeyword(headers, ['nama perangkat', 'perangkat', 'nama', 'asset']);
+        var assetCol = findColumnByKeyword(headers, ['spec_name', 'spec name', 'nama perangkat', 'perangkat', 'nama', 'asset']);
         var totalAsset = assetCol ? FormulaController.computeCount(sheetData, assetCol) : FormulaController.computeCount(sheetData);
         var cardAsset = document.getElementById('card-total-asset');
         if (cardAsset) cardAsset.textContent = formatNumber(totalAsset);
@@ -193,7 +193,7 @@
         // NBV = sum of NBV per unique building.
         if (window.myBarChart && window.myBarChart.data) {
             // Try exact column name first, then fallback to keyword detection
-            var buildingCol = FormulaController.findBestColumn(headers, ['GRUP_BUILDING'], ['grup_building', 'building', 'gedung', 'status', 'pergerakan', 'kategori']);
+            var buildingCol = FormulaController.findBestColumn(headers, ['CATEGORY'], ['category', 'kategori', 'grup_building', 'building', 'gedung', 'status', 'pergerakan']);
 
             // Find SPEC_CODE column for counting Qty
             var specCodeColBar = FormulaController.findBestColumn(headers, ['SPEC_CODE'], ['spec_code', 'spec code', 'spek']);
@@ -295,6 +295,16 @@
                 window.myHorizontalBarChart.data.labels = orgLabels;
                 window.myHorizontalBarChart.data.datasets[0].data = orgQtyData;
                 window.myHorizontalBarChart.data.datasets[1].data = orgNbvData;
+
+                // Dynamically resize chart container based on number of labels
+                var chartContainer = document.getElementById('horizontalBarChartContainer');
+                if (chartContainer) {
+                    var minHeight = 450;
+                    var perLabelHeight = 40;
+                    var dynamicHeight = Math.max(minHeight, orgLabels.length * perLabelHeight);
+                    chartContainer.style.height = dynamicHeight + 'px';
+                }
+
                 window.myHorizontalBarChart.update();
             } else {
                 // Fallback if no org column is found
@@ -305,8 +315,49 @@
             }
         }
 
-        // 8. AGING PERANGKAT CHART (agingBarChart)
-        // Uses RANGE column for grouping.
+        // 8. PERANGKAT IN & OUT CHARTS
+        var countIn = 0;
+        var countOut = 0;
+        
+        // Find the status column
+        var statusCol = FormulaController.findBestColumn(headers, ['status', 'STATUS', 'Status'], ['status']);
+        
+        if (statusCol !== null) {
+            for (var m = 0; m < sheetData.length; m++) {
+                var st = String(sheetData[m][statusCol] || '').trim().toUpperCase();
+                if (st === 'IN') {
+                    countIn++;
+                } else if (st === 'OUT') {
+                    countOut++;
+                }
+            }
+        }
+        
+        // The month the user chose
+        var periodText = document.getElementById('selected-period-text') ? document.getElementById('selected-period-text').textContent : "Bulan X";
+        if (!periodText || periodText === '-' || periodText === 'PILIH DATA' || periodText === 'Bulan X') {
+            periodText = sheetData.length > 0 ? (sheetData[0]['periode_group'] || 'Unknown') : 'Unknown';
+        }
+        
+        var pinTitle = document.getElementById('perangkat-in-title-period');
+        if (pinTitle) pinTitle.textContent = periodText;
+        var poutTitle = document.getElementById('perangkat-out-title-period');
+        if (poutTitle) poutTitle.textContent = periodText;
+        
+        if (window.perangkatInChart && window.perangkatInChart.data) {
+            window.perangkatInChart.data.labels = [periodText];
+            window.perangkatInChart.data.datasets[0].data = [countIn];
+            window.perangkatInChart.update();
+        }
+        
+        if (window.perangkatOutChart && window.perangkatOutChart.data) {
+            window.perangkatOutChart.data.labels = [periodText];
+            window.perangkatOutChart.data.datasets[0].data = [countOut];
+            window.perangkatOutChart.update();
+        }
+
+        // 9. AGING PERANGKAT (agingBarChart)
+        // Uses RANGE column for grouping by age.
         // Qty = count of SPEC_CODE per unique range.
         if (window.agingBarChart && window.agingBarChart.data) {
             // Try exact column name first, then fallback to keyword detection
@@ -377,7 +428,7 @@
 
                     // 2. Calculate Used Slots per Rack from asset data
                     var usedSlotsPerRack = {};
-                    var subLocationCol = findColumnByKeyword(headers, ['sub_location', 'sub location', 'label', 'lokasi', 'location']);
+                    var subLocationCol = findColumnByKeyword(headers, ['sub_location', 'sub location', 'so_location', 'label', 'lokasi', 'location']);
                     
                     if (subLocationCol && sheetData.length > 0) {
                         for (var j = 0; j < sheetData.length; j++) {

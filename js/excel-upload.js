@@ -13,7 +13,7 @@
     'use strict';
 
     // ── Constants ──────────────────────────────────────────
-    var MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    var MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
     var ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
     var PREVIEW_ROWS = 5;
 
@@ -155,9 +155,222 @@
         });
     }
 
+    // ── Helper functions for CI search and period extraction ──
+    function getValCI(row, key) {
+        if (!row) return null;
+        var lowerKey = key.toLowerCase();
+        for (var k in row) {
+            if (row.hasOwnProperty(k) && k.toLowerCase() === lowerKey) {
+                return row[k];
+            }
+        }
+        return null;
+    }
+
+    function formatPeriode(rawDate) {
+        if (!rawDate) return 'Unknown Period';
+        
+        var str = String(rawDate).toUpperCase();
+        var currentYear = new Date().getFullYear();
+        
+        var months = {
+            'JAN': 'January',
+            'FEB': 'February',
+            'MAR': 'March',
+            'APR': 'April',
+            'MEI': 'May',
+            'JUN': 'June',
+            'JUL': 'July',
+            'AGU': 'August',
+            'SEP': 'September',
+            'OKT': 'October',
+            'NOV': 'November',
+            'DES': 'December'
+        };
+        
+        for (var key in months) {
+            if (str.indexOf(key) !== -1) {
+                return months[key] + ' ' + currentYear;
+            }
+        }
+        
+        return 'Unknown Period';
+    }
+
+    // ── Modern Upload Steps UI Helpers ──
+    function createUploadStepsUI() {
+        if (!progressContainer) return;
+        
+        progressContainer.replaceChildren();
+
+        var fileInfo = document.createElement('div');
+        fileInfo.className = 'upload-file-info mb-3';
+        
+        var fnSpan = document.createElement('span');
+        fnSpan.id = 'upload-file-name';
+        fnSpan.className = 'file-name';
+        fileInfo.appendChild(fnSpan);
+        
+        var fsSpan = document.createElement('span');
+        fsSpan.id = 'upload-file-size';
+        fsSpan.className = 'file-size';
+        fileInfo.appendChild(fsSpan);
+        
+        progressContainer.appendChild(fileInfo);
+
+        var stepsList = document.createElement('div');
+        stepsList.className = 'upload-steps-list';
+
+        var steps = [
+            { id: 'step-read', label: 'Reading file...', icon: 'fa-file' },
+            { id: 'step-parse', label: 'Parsing data sheet...', icon: 'fa-table' },
+            { id: 'step-upload', label: 'Saving to database...', icon: 'fa-database', hasProgress: true },
+            { id: 'step-finalize', label: 'Finalizing & updating dashboard...', icon: 'fa-sync-alt' }
+        ];
+
+        steps.forEach(function (step) {
+            var item = document.createElement('div');
+            item.className = 'upload-step-item';
+            item.id = step.id;
+
+            var iconContainer = document.createElement('div');
+            iconContainer.className = 'step-icon-container';
+            var icon = document.createElement('i');
+            icon.className = 'fas ' + step.icon;
+            iconContainer.appendChild(icon);
+            item.appendChild(iconContainer);
+
+            var labelContainer = document.createElement('div');
+            labelContainer.className = 'step-label-container';
+            labelContainer.style.flexGrow = '1';
+
+            var label = document.createElement('span');
+            label.className = 'step-label';
+            label.textContent = step.label;
+            labelContainer.appendChild(label);
+
+            if (step.hasProgress) {
+                var progressWrapper = document.createElement('div');
+                progressWrapper.className = 'batch-progress-wrapper';
+                progressWrapper.id = 'batch-progress-container';
+                progressWrapper.style.display = 'none';
+
+                var progressDetails = document.createElement('div');
+                progressDetails.className = 'batch-progress-details';
+
+                var progressText = document.createElement('span');
+                progressText.id = 'batch-progress-text';
+                progressText.textContent = '0 / 0 rows';
+                progressDetails.appendChild(progressText);
+
+                var progressPercent = document.createElement('span');
+                progressPercent.id = 'batch-progress-percent';
+                progressPercent.textContent = '0%';
+                progressDetails.appendChild(progressPercent);
+
+                progressWrapper.appendChild(progressDetails);
+
+                var progressBg = document.createElement('div');
+                progressBg.className = 'batch-progress-bar-bg';
+                var progressFill = document.createElement('div');
+                progressFill.className = 'batch-progress-bar-fill';
+                progressFill.id = 'batch-progress-bar-fill';
+                progressBg.appendChild(progressFill);
+                progressWrapper.appendChild(progressBg);
+
+                labelContainer.appendChild(progressWrapper);
+            }
+
+            item.appendChild(labelContainer);
+            stepsList.appendChild(item);
+        });
+
+        progressContainer.appendChild(stepsList);
+
+        fileNameEl = document.getElementById('upload-file-name');
+        fileSizeEl = document.getElementById('upload-file-size');
+    }
+
+    function setStepState(stepId, state) {
+        var stepItem = document.getElementById(stepId);
+        if (!stepItem) return;
+
+        var iconContainer = stepItem.querySelector('.step-icon-container');
+        if (!iconContainer) return;
+
+        stepItem.classList.remove('active', 'completed');
+        iconContainer.replaceChildren();
+
+        var defaultIcons = {
+            'step-read': 'fa-file',
+            'step-parse': 'fa-table',
+            'step-upload': 'fa-database',
+            'step-finalize': 'fa-sync-alt'
+        };
+
+        if (state === 'active') {
+            stepItem.classList.add('active');
+            var spinner = document.createElement('div');
+            spinner.className = 'step-spinner';
+            iconContainer.appendChild(spinner);
+        } else if (state === 'completed') {
+            stepItem.classList.add('completed');
+            var check = document.createElement('i');
+            check.className = 'fas fa-check';
+            iconContainer.appendChild(check);
+        } else {
+            var icon = document.createElement('i');
+            icon.className = 'fas ' + (defaultIcons[stepId] || 'fa-info-circle');
+            iconContainer.appendChild(icon);
+        }
+    }
+
+    function toggleModalInteractivity(allowInteraction) {
+        var modal = $('#uploadExcelModal');
+        var closeBtns = document.querySelectorAll('#uploadExcelModal .close');
+        var browseBtn = document.getElementById('btn-browse-file');
+        var generateBtn = document.getElementById('btn-generate-charts');
+        var dataTypeSelect = document.getElementById('upload-data-type');
+        
+        if (allowInteraction) {
+            // Enable closing modal
+            var modalData = modal.data('bs.modal');
+            if (modalData && modalData._config) {
+                modalData._config.backdrop = true;
+                modalData._config.keyboard = true;
+            }
+            
+            // Show close buttons
+            closeBtns.forEach(function (btn) {
+                btn.style.display = '';
+            });
+            
+            // Enable inputs & buttons
+            if (browseBtn) browseBtn.removeAttribute('disabled');
+            if (generateBtn) generateBtn.removeAttribute('disabled');
+            if (dataTypeSelect) dataTypeSelect.removeAttribute('disabled');
+        } else {
+            // Disable closing modal
+            var modalData = modal.data('bs.modal');
+            if (modalData && modalData._config) {
+                modalData._config.backdrop = 'static';
+                modalData._config.keyboard = false;
+            }
+            
+            // Hide close buttons
+            closeBtns.forEach(function (btn) {
+                btn.style.display = 'none';
+            });
+            
+            // Disable inputs & buttons
+            if (browseBtn) browseBtn.setAttribute('disabled', 'true');
+            if (generateBtn) generateBtn.setAttribute('disabled', 'true');
+            if (dataTypeSelect) dataTypeSelect.setAttribute('disabled', 'true');
+        }
+    }
+
     // ── File Handling ──────────────────────────────────────
     function handleFile(file) {
-        // Validate extension
         var fileName = file.name || '';
         var ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
         if (ALLOWED_EXTENSIONS.indexOf(ext) === -1) {
@@ -165,30 +378,34 @@
             return;
         }
 
-        // Validate size
         if (file.size > MAX_FILE_SIZE) {
-            showToast('File too large. Maximum size is 10MB.', 'error');
+            showToast('File too large. Maximum size is 100MB.', 'error');
             return;
         }
 
-        // Show progress
+        createUploadStepsUI();
         showProgress(fileName, file.size);
+        setStepState('step-read', 'active');
 
-        // Read file
         var reader = new FileReader();
         reader.onload = function (e) {
-            try {
-                var data = new Uint8Array(e.target.result);
-                parsedWorkbook = XLSX.read(data, { type: 'array', cellFormula: false, cellDates: true });
-                completeProgress();
-                populateSheetSelector();
-                loadSheet(parsedWorkbook.SheetNames[0]);
-                setModalExpanded(true);
-                showToast('File loaded successfully! ' + parsedWorkbook.SheetNames.length + ' sheet(s) found.', 'success');
-            } catch (err) {
-                showToast('Failed to parse file. Please check the format.', 'error');
-                resetUpload();
-            }
+            setStepState('step-read', 'completed');
+            setStepState('step-parse', 'active');
+
+            setTimeout(function () {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    parsedWorkbook = XLSX.read(data, { type: 'array', cellFormula: false, cellDates: true });
+                    setStepState('step-parse', 'completed');
+                    populateSheetSelector();
+                    loadSheet(parsedWorkbook.SheetNames[0]);
+                    setModalExpanded(true);
+                    showToast('File loaded successfully! ' + parsedWorkbook.SheetNames.length + ' sheet(s) found.', 'success');
+                } catch (err) {
+                    showToast('Failed to parse file. Please check the format.', 'error');
+                    resetUpload();
+                }
+            }, 100);
         };
         reader.onerror = function () {
             showToast('Failed to read file.', 'error');
@@ -201,28 +418,15 @@
         if (!progressContainer) return;
         progressContainer.classList.add('active');
 
-        // Sanitize file name display using textContent
         if (fileNameEl) fileNameEl.textContent = name;
         if (fileSizeEl) fileSizeEl.textContent = formatFileSize(size);
-
-        // Animate progress
-        if (progressFill) {
-            progressFill.style.width = '0%';
-            setTimeout(function () { progressFill.style.width = '60%'; }, 100);
-        }
-    }
-
-    function completeProgress() {
-        if (progressFill) {
-            progressFill.style.width = '100%';
-        }
     }
 
     function resetUpload() {
+        toggleModalInteractivity(true);
         if (progressContainer) progressContainer.classList.remove('active');
         if (controlsPanel) controlsPanel.classList.remove('active');
         if (previewSection) previewSection.classList.remove('active');
-        if (progressFill) progressFill.style.width = '0%';
         parsedWorkbook = null;
         currentSheetData = null;
         currentHeaders = null;
@@ -397,43 +601,189 @@
         var dataType = document.getElementById('upload-data-type').value;
         var apiEndpoint = dataType === 'rack' ? 'api/save_rack_data.php' : 'api/save_data.php';
 
-        // Send data to PHP backend to save to database
+        toggleModalInteractivity(false);
+        
+        var totalRowsForEst = currentSheetData.length;
+        var estSeconds = Math.max(5, Math.ceil(totalRowsForEst / 5000) * 5);
+        var estTimeText = estSeconds < 60 ? estSeconds + " seconds" : Math.ceil(estSeconds / 60) + " minutes";
+        
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Data is loading...',
+                html: 'Please do not refresh the page.<br><br><span style="font-size: 0.9em; color: #666;"><i class="fas fa-clock mr-1"></i> Estimated time: ~' + estTimeText + '</span>',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+
+        setStepState('step-upload', 'active');
+        setStepState('step-finalize', 'pending');
+
+        var batchProgressContainer = document.getElementById('batch-progress-container');
+        var batchProgressText = document.getElementById('batch-progress-text');
+        var batchProgressBarFill = document.getElementById('batch-progress-bar-fill');
+        var batchProgressPercent = document.getElementById('batch-progress-percent');
+
+        if (batchProgressContainer) {
+            batchProgressContainer.style.display = 'block';
+        }
+
+        var localSheetData = currentSheetData;
+        var totalRows = localSheetData.length;
+        var uploadedCount = 0;
+        var BATCH_SIZE = 5000;
+
+        var initPayload = { action: 'init' };
+        if (dataType === 'asset') {
+            var activeSheetName = sheetSelect ? sheetSelect.value : '';
+            var pGroup = formatPeriode(activeSheetName);
+            initPayload.periods = [pGroup];
+            
+            // Add the sheetName to each row so the backend knows what to use for periode
+            for (var idx = 0; idx < totalRows; idx++) {
+                localSheetData[idx]['periode'] = activeSheetName;
+            }
+        }
+
         fetch(apiEndpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(currentSheetData)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initPayload)
         })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') {
-                showToast('Data saved to database successfully!', 'success');
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (res.status !== 'success') {
+                throw new Error(res.message || 'Initialization failed');
+            }
+            sendNextBatch(0);
+        })
+        .catch(function (err) {
+            handleUploadError(err.message || 'Error occurred during initialization');
+        });
+
+        function sendNextBatch(startIndex) {
+            if (startIndex >= totalRows) {
+                setStepState('step-upload', 'completed');
+                setStepState('step-finalize', 'active');
+                finalizeUpload();
+                return;
+            }
+
+            var endIndex = Math.min(startIndex + BATCH_SIZE, totalRows);
+            var batchRows = localSheetData.slice(startIndex, endIndex);
+
+            var appendPayload = {
+                action: 'append',
+                data: batchRows
+            };
+
+            fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appendPayload)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.status !== 'success') {
+                    throw new Error(res.message || 'Batch upload failed');
+                }
                 
+                uploadedCount += batchRows.length;
+                
+                var percent = (uploadedCount / totalRows) * 100;
+                if (batchProgressText) {
+                    batchProgressText.textContent = number_format(uploadedCount, 0, '.', ',') + ' / ' + number_format(totalRows, 0, '.', ',') + ' rows';
+                }
+                if (batchProgressBarFill) {
+                    batchProgressBarFill.style.width = percent + '%';
+                }
+                if (batchProgressPercent) {
+                    batchProgressPercent.textContent = Math.round(percent) + '%';
+                }
+
+                sendNextBatch(endIndex);
+            })
+            .catch(function (err) {
+                handleUploadError(err.message || 'Error uploading database batch');
+            });
+        }
+
+        function finalizeUpload() {
+            var finalizePayload = { action: 'finalize' };
+            fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalizePayload)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.status !== 'success') {
+                    throw new Error(res.message || 'Finalization failed');
+                }
+
+                setStepState('step-finalize', 'completed');
+                showToast('Data saved successfully!', 'success');
+
                 if (dataType === 'rack') {
-                    // For rack master data, we just want to refresh the dashboard if data is loaded
                     if (window.FormulaController && window.currentDashboardData) {
-                        window.FormulaController.updateDashboardCards(window.currentDashboardData, window.currentDashboardHeaders);
+                        try { window.FormulaController.updateDashboardCards(window.currentDashboardData, window.currentDashboardHeaders); } catch(e) {}
                     }
                 } else {
-                    // For asset data, refresh periods and select the newly uploaded one
                     if (window.loadPeriods) {
-                        let newPeriod = (result.periods && result.periods.length > 0) ? result.periods[0] : null;
+                        var newPeriod = (res.periods && res.periods.length > 0) ? res.periods[0] : null;
                         window.loadPeriods(newPeriod);
                     } else if (window.FormulaController) {
-                        window.FormulaController.updateDashboardCards(currentSheetData, currentHeaders);
+                        try { window.FormulaController.updateDashboardCards(localSheetData, currentHeaders); } catch(e) {}
                     }
                 }
 
                 showToast('Dashboard updated successfully!', 'success');
+
+                setTimeout(function () {
+                    toggleModalInteractivity(true);
+                    $('#uploadExcelModal').modal('hide');
+                    resetUpload();
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Data Upload Success!',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(function() {
+                            window.location.reload();
+                        });
+                    } else {
+                        window.location.reload();
+                    }
+                }, 1000);
+            })
+            .catch(function (err) {
+                handleUploadError(err.message || 'Error during finalization');
+            });
+        }
+
+        function handleUploadError(msg) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Upload Failed',
+                    text: msg,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             } else {
-                showToast('Failed to save to database: ' + result.message, 'error');
+                showToast(msg, 'error');
             }
-        })
-        .catch(error => {
-            console.error('Error saving data:', error);
-            showToast('Network error while saving data.', 'error');
-        });
+            toggleModalInteractivity(true);
+            
+            setStepState('step-upload', 'pending');
+            setStepState('step-finalize', 'pending');
+            if (batchProgressContainer) {
+                batchProgressContainer.style.display = 'none';
+            }
+        }
     }
 
 

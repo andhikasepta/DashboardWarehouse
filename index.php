@@ -17,7 +17,8 @@
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="css/excel-upload.css" rel="stylesheet">
+    <link href="css/excel-upload.css?v=<?= time() ?>" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
 </head>
 
@@ -64,18 +65,29 @@
                                 </button>
                             </div>
                         </li>
-                        <!-- Nav Item - User Information -->
-                        <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                        <!-- Navigation Links -->
+                        <li class="nav-item active">
+                            <a class="nav-link" href="index.php">
+                                <span class="mr-2 d-none d-lg-inline text-primary font-weight-bold">
+                                    <i class="fas fa-chart-line mr-1"></i> Dashboard
+                                </span>
                             </a>
-                            <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="master_data.php">
-                                    <i class="fas fa-database fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Master Data
-                                </a>
-                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="master_data.php">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 font-weight-bold">
+                                    <i class="fas fa-database mr-1"></i> Master Data
+                                </span>
+                            </a>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- User Information (Static) -->
+                        <li class="nav-item d-flex align-items-center">
+                            <span class="nav-link pr-0">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                            </span>
                         </li>
                     </ul>
                 </nav>
@@ -196,7 +208,7 @@
                     <div class="row">
                         <div class="col-xl-9 col-lg-8">
                             <div class="row">
-                                <div class="col-xl- col-lg-6">
+                                <div class="col-xl-6 col-lg-6">
                                     <div class="card shadow mb-4">
                                         <div
                                             class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
@@ -204,8 +216,8 @@
                                                 <span style="font-size: small;">Berdasarkan Kategori</span>
                                             </h6>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="chart-bar">
+                                        <div class="card-body" style="padding: 0.5rem;">
+                                            <div style="height: 450px; position: relative; width: 100%;">
                                                 <canvas id="myBarChart"></canvas>
                                             </div>
                                         </div>
@@ -220,9 +232,11 @@
                                                 <span style="font-size: small;">Department / Unit Pemilik Asset</span>
                                             </h6>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="chart-bar">
-                                                <canvas id="myHorizontalBarChart"></canvas>
+                                        <div class="card-body" style="padding: 0.5rem;">
+                                            <div id="horizontalBarScrollWrapper" style="max-height: 450px; overflow-y: auto; overflow-x: hidden;">
+                                                <div class="chart-bar" id="horizontalBarChartContainer" style="height: 450px; position: relative; width: 100%;">
+                                                    <canvas id="myHorizontalBarChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -249,7 +263,7 @@
                                         <div
                                             class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                                             <h6 class="m-0 font-weight-bold text-primary">PERANGKAT IN<br>
-                                                <span style="font-size: small;">Bulan X</span>
+                                                <span id="perangkat-in-title-period" style="font-size: small;">Bulan X</span>
                                             </h6>
                                         </div>
                                         <div class="card-body">
@@ -264,7 +278,7 @@
                                         <div
                                             class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                                             <h6 class="m-0 font-weight-bold text-primary">PERANGKAT OUT<br>
-                                                <span style="font-size: small;">Bulan X<br></span>
+                                                <span id="perangkat-out-title-period" style="font-size: small;">Bulan X</span>
                                             </h6>
                                         </div>
                                         <div class="card-body">
@@ -385,7 +399,7 @@
                                         <i class="fas fa-folder-open mr-1"></i> Browse Files
                                     </button>
                                     <div class="file-types">
-                                        Supported: .xlsx, .xls, .csv &bull; Max 10MB
+                                        Supported: .xlsx, .xls, .csv &bull; Max 100MB
                                     </div>
                                 </div>
 
@@ -450,14 +464,17 @@
         <script
             src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@0.7.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
+        <!-- SweetAlert2 for loading dialogs -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
         <!-- SheetJS (xlsx) for Excel parsing -->
         <!-- TODO(security): Pin version and add SRI integrity hash for production -->
         <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
         <!-- Page level custom scripts -->
-        <script src="js/formula-controller.js?v=5"></script>
-        <script src="js/excel-upload.js?v=5"></script>
-        <script src="js/demo/chart-bar-demo.js?v=5"></script>
+        <script src="js/formula-controller.js?v=6"></script>
+        <script src="js/excel-upload.js?v=6"></script>
+        <script src="js/demo/chart-bar-demo.js?v=6"></script>
         <script src="js/demo/chart-horizontal-bar-demo.js?v=5"></script>
 
         <!-- Close modal after chart generation -->
@@ -596,6 +613,18 @@
                 // ── Fetch & render data for a period ──
                 function loadDataForPeriod(period) {
                     document.getElementById('selected-period-text').textContent = period.toUpperCase();
+                    
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Data is Processing',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    }
+                    
                     fetch('api/get_data.php?periode=' + encodeURIComponent(period))
                         .then(function (response) { return response.json(); })
                         .then(function (result) {
@@ -611,15 +640,26 @@
                                         if (cardUpdate) {
                                             cardUpdate.textContent = period.toUpperCase();
                                         }
+                                        if (typeof Swal !== 'undefined') Swal.close();
                                     }, 100);
+                                } else {
+                                    if (typeof Swal !== 'undefined') Swal.close();
                                 }
                             } else {
                                 if (window.FormulaController) {
                                     window.FormulaController.updateDashboardCards([], []);
                                 }
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Empty', 'No data found for ' + period, 'info');
+                                }
                             }
                         })
-                        .catch(function (error) { console.error('Error fetching data:', error); });
+                        .catch(function (error) { 
+                            console.error('Error fetching data:', error);
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Error', 'Failed to load data. Please try again.', 'error');
+                            }
+                        });
                 }
 
                 // ── Initial load ──

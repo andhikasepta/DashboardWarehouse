@@ -54,101 +54,76 @@
 
 /* ---------- Drop Zone ---------- */
 .upload-drop-zone {
-    border: 2.5px dashed #c5cae9;
-    border-radius: 1rem;
-    padding: 2.5rem 2rem;
+    border: 2px dashed #b7b9cc;
+    border-radius: 0.8rem;
+    padding: 3rem 2rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    background: #f8f9fc;
+    transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
 }
 
-.upload-drop-zone::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at center, rgba(78, 115, 223, 0.06) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-}
-
-.upload-drop-zone:hover::before,
-.upload-drop-zone.drag-over::before {
-    opacity: 1;
-}
-
 .upload-drop-zone:hover,
 .upload-drop-zone.drag-over {
-    border-color: #4e73df;
-    background: linear-gradient(135deg, #eef1ff 0%, #e3e9ff 100%);
-    transform: scale(1.01);
-    box-shadow: 0 0 0 4px rgba(78, 115, 223, 0.1);
+    border-color: #858796;
+    background: #eaecf4;
 }
 
 .upload-drop-zone.drag-over {
     border-style: solid;
-    animation: pulse-border 1.2s ease infinite;
-}
-
-@keyframes pulse-border {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(78, 115, 223, 0.1); }
-    50% { box-shadow: 0 0 0 8px rgba(78, 115, 223, 0.15); }
 }
 
 .upload-drop-zone .upload-icon {
     font-size: 3rem;
-    color: #4e73df;
+    color: #b7b9cc;
     margin-bottom: 1rem;
     display: inline-block;
-    animation: float-icon 3s ease-in-out infinite;
 }
 
-@keyframes float-icon {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+.upload-drop-zone:hover .upload-icon {
+    color: #858796;
 }
 
 .upload-drop-zone h5 {
     font-weight: 700;
-    color: #2e384d;
+    color: #5a5c69;
     margin-bottom: 0.5rem;
     font-size: 1.1rem;
 }
 
 .upload-drop-zone p {
-    color: #8898aa;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
+    color: #858796;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
 }
 
 .upload-drop-zone .btn-browse {
-    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1.8rem;
-    border-radius: 2rem;
+    background: #eaecf4;
+    color: #5a5c69;
+    border: 1px solid #d1d3e2;
+    padding: 0.6rem 1.8rem;
+    border-radius: 0.4rem;
     font-weight: 600;
     font-size: 0.85rem;
-    letter-spacing: 0.3px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .upload-drop-zone .btn-browse:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
+    background: #d1d3e2;
+    color: #3a3b45;
+    border-color: #b7b9cc;
 }
 
 .upload-drop-zone .file-types {
     font-size: 0.75rem;
-    color: #adb5bd;
-    margin-top: 0.75rem;
+    color: #858796;
+    margin-top: 1.5rem;
+    display: block;
 }
 
 /* ---------- Upload Progress ---------- */
@@ -630,4 +605,127 @@
     .upload-modal-body {
         padding: 1rem;
     }
+}
+
+/* ---------- Modern Upload Steps Checklist ---------- */
+.upload-steps-list {
+    margin-top: 1.5rem;
+    padding: 1.2rem;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 1rem;
+    border: 1px solid rgba(78, 115, 223, 0.1);
+    box-shadow: 0 10px 30px rgba(78, 115, 223, 0.04);
+}
+
+.upload-step-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    opacity: 0.4;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.upload-step-item:last-child {
+    margin-bottom: 0;
+}
+
+.upload-step-item.active {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+.upload-step-item.completed {
+    opacity: 0.95;
+}
+
+.step-icon-container {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ecef;
+    color: #858796;
+    font-size: 0.85rem;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.upload-step-item.active .step-icon-container {
+    background: #eef2ff;
+    color: #4e73df;
+    border: 2px solid #4e73df;
+    box-shadow: 0 0 12px rgba(78, 115, 223, 0.3);
+}
+
+.upload-step-item.completed .step-icon-container {
+    background: #eafaf1;
+    color: #1cc88a;
+    border: 2px solid #1cc88a;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #5a5c69;
+    flex-grow: 1;
+    transition: color 0.3s ease;
+}
+
+.upload-step-item.active .step-label {
+    color: #2e384d;
+    font-weight: 700;
+}
+
+.upload-step-item.completed .step-label {
+    color: #1a7f5a;
+}
+
+/* Spinner inside active step icon */
+.step-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(78, 115, 223, 0.2);
+    border-top-color: #4e73df;
+    border-radius: 50%;
+    animation: step-spin 0.8s linear infinite;
+}
+
+@keyframes step-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Batch Upload Specific Progress Indicator */
+.batch-progress-wrapper {
+    margin-top: 0.6rem;
+    padding: 0.8rem;
+    background: rgba(248, 249, 252, 0.9);
+    border-radius: 0.6rem;
+    border: 1px solid #eaecf4;
+}
+
+.batch-progress-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #858796;
+    margin-bottom: 0.35rem;
+}
+
+.batch-progress-bar-bg {
+    height: 8px;
+    background: #eaecf4;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.batch-progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4e73df 0%, #1cc88a 100%);
+    border-radius: 10px;
+    transition: width 0.2s ease;
 }
