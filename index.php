@@ -43,9 +43,25 @@
                                     style="font-weight: bold;">PILIH DATA</span> <i
                                     class="fas fa-chevron-down fa-sm fa-fw text-gray-400"></i>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                                aria-labelledby="periodDropdown" id="period-dropdown-menu">
-                                <!-- Periods injected here -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in p-3"
+                                aria-labelledby="periodDropdown" id="period-dropdown-menu"
+                                style="min-width: 280px;">
+                                <h6 class="dropdown-header px-0 pt-0 text-primary font-weight-bold">PILIH DATA</h6>
+                                <div class="form-group mb-2">
+                                    <label for="period-month-select" class="small font-weight-bold text-gray-600">Bulan</label>
+                                    <select class="form-control form-control-sm" id="period-month-select">
+                                        <option value="">-- Pilih Bulan --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="period-year-select" class="small font-weight-bold text-gray-600">Tahun</label>
+                                    <select class="form-control form-control-sm" id="period-year-select">
+                                        <option value="">-- Pilih Tahun --</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary btn-sm btn-block" id="btn-load-period" disabled>
+                                    <i class="fas fa-check mr-1"></i>Tampilkan Data
+                                </button>
                             </div>
                         </li>
                         <!-- Nav Item - User Information -->
@@ -55,14 +71,9 @@
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#uploadExcelModal">
-                                    <i class="fas fa-file-excel fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Upload Excel
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#deleteDataModal">
-                                    <i class="fas fa-trash fa-sm fa-fw mr-2 text-danger"></i>
-                                    Delete Data
+                                <a class="dropdown-item" href="master_data.php">
+                                    <i class="fas fa-database fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Master Data
                                 </a>
                             </div>
                         </li>
@@ -320,9 +331,15 @@
                     <div class="modal-body">
                         <p>Select a period to delete all its associated data from the database.</p>
                         <div class="form-group">
-                            <label for="deletePeriodSelect">Select Period</label>
-                            <select class="form-control" id="deletePeriodSelect">
-                                <!-- Populated by JS -->
+                            <label for="deleteMonthSelect">Bulan</label>
+                            <select class="form-control" id="deleteMonthSelect">
+                                <option value="">-- Pilih Bulan --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="deleteYearSelect">Tahun</label>
+                            <select class="form-control" id="deleteYearSelect">
+                                <option value="">-- Pilih Tahun --</option>
                             </select>
                         </div>
                     </div>
@@ -349,6 +366,13 @@
                     <div class="modal-body upload-modal-body">
                         <div class="row">
                             <div class="col-lg-12" id="uploadModalLeftCol">
+                                <div class="form-group mb-3">
+                                    <label for="upload-data-type" class="small font-weight-bold text-gray-600">Tipe Data</label>
+                                    <select class="form-control form-control-sm" id="upload-data-type">
+                                        <option value="asset">Data Asset</option>
+                                        <option value="rack">Data Utilisasi Rack</option>
+                                    </select>
+                                </div>
                                 <div class="upload-drop-zone" id="upload-drop-zone">
                                     <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv"
                                         style="display:none" />
@@ -454,60 +478,132 @@
         <!-- Fetch data from database on load -->
         <script>
             document.addEventListener('DOMContentLoaded', function () {
-                // Fetch periods statically for 2026
-                function loadPeriods(selectPeriod = null) {
-                    const months = [
-                        "January", "February", "March", "April", "May", "June",
-                        "July", "August", "September", "October", "November", "December"
-                    ];
-                    const periods = months.map(m => m + ' 2026');
+                var ALL_MONTHS = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ];
 
-                    const menu = document.getElementById('period-dropdown-menu');
-                    if (menu) menu.replaceChildren();
-
-                    const deleteSelect = document.getElementById('deletePeriodSelect');
-                    if (deleteSelect) deleteSelect.replaceChildren();
-
-                    periods.forEach(function (period) {
-                        if (menu) {
-                            const a = document.createElement('a');
-                            a.className = 'dropdown-item';
-                            a.href = '#';
-                            a.textContent = period.toUpperCase();
-                            a.addEventListener('click', function (e) {
-                                e.preventDefault();
-                                loadDataForPeriod(period);
-                            });
-                            menu.appendChild(a);
-                        }
-
-                        if (deleteSelect) {
-                            const opt = document.createElement('option');
-                            opt.value = period;
-                            opt.textContent = period.toUpperCase();
-                            deleteSelect.appendChild(opt);
-                        }
+                // Keep the dropdown open when clicking inside the selects
+                var periodMenu = document.getElementById('period-dropdown-menu');
+                if (periodMenu) {
+                    periodMenu.addEventListener('click', function (e) {
+                        e.stopPropagation();
                     });
+                }
 
-                    // Load default or selected
-                    if (selectPeriod) {
-                        loadDataForPeriod(selectPeriod);
-                    } else {
-                        document.getElementById('selected-period-text').textContent = "PILIH DATA";
-                        if (window.FormulaController) {
-                            window.FormulaController.updateDashboardCards([], []);
-                        }
+                // ── Populate Month & Year selects from DB ──
+                function loadPeriods(selectPeriod) {
+                    fetch('api/get_periods.php')
+                        .then(function (r) { return r.json(); })
+                        .then(function (result) {
+                            var yearsSet = {};
+
+                            if (result.status === 'success' && result.data) {
+                                result.data.forEach(function (pg) {
+                                    if (!pg || pg === 'Unknown Period') return;
+                                    var parts = pg.split(' ');
+                                    if (parts.length >= 2) {
+                                        yearsSet[parts[1]] = true;
+                                    }
+                                });
+                            }
+
+                            // Build sorted year list ascending
+                            var availableYears = Object.keys(yearsSet).sort();
+
+                            // Populate navbar Month select (always all 12 months)
+                            populateSelect('period-month-select', ALL_MONTHS, '-- Pilih Bulan --');
+                            // Populate navbar Year select (dynamic from DB)
+                            populateSelect('period-year-select', availableYears, '-- Pilih Tahun --');
+
+                            // Populate delete modal selects
+                            populateSelect('deleteMonthSelect', ALL_MONTHS, '-- Pilih Bulan --');
+                            populateSelect('deleteYearSelect', availableYears, '-- Pilih Tahun --');
+
+                            // If a specific period was requested (e.g. after upload), pre-select it
+                            if (selectPeriod) {
+                                preselectPeriod(selectPeriod);
+                                loadDataForPeriod(selectPeriod);
+                            } else {
+                                document.getElementById('selected-period-text').textContent = "PILIH DATA";
+                                if (window.FormulaController) {
+                                    window.FormulaController.updateDashboardCards([], []);
+                                }
+                            }
+                        })
+                        .catch(function (err) {
+                            console.error('Error fetching periods:', err);
+                        });
+                }
+
+                function populateSelect(selectId, items, placeholder) {
+                    var sel = document.getElementById(selectId);
+                    if (!sel) return;
+                    sel.replaceChildren();
+                    var defOpt = document.createElement('option');
+                    defOpt.value = '';
+                    defOpt.textContent = placeholder;
+                    sel.appendChild(defOpt);
+                    items.forEach(function (item) {
+                        var opt = document.createElement('option');
+                        opt.value = item;
+                        opt.textContent = item.toUpperCase();
+                        sel.appendChild(opt);
+                    });
+                }
+
+                function preselectPeriod(period) {
+                    var parts = period.split(' ');
+                    if (parts.length >= 2) {
+                        var mSel = document.getElementById('period-month-select');
+                        var ySel = document.getElementById('period-year-select');
+                        if (mSel) mSel.value = parts[0];
+                        if (ySel) ySel.value = parts[1];
+                        updateLoadButton();
                     }
                 }
 
+                // ── Enable / disable the "Tampilkan Data" button ──
+                function updateLoadButton() {
+                    var m = document.getElementById('period-month-select');
+                    var y = document.getElementById('period-year-select');
+                    var btn = document.getElementById('btn-load-period');
+                    if (btn) {
+                        btn.disabled = !(m && m.value && y && y.value);
+                    }
+                }
+
+                var monthSel = document.getElementById('period-month-select');
+                var yearSel = document.getElementById('period-year-select');
+                if (monthSel) monthSel.addEventListener('change', updateLoadButton);
+                if (yearSel) yearSel.addEventListener('change', updateLoadButton);
+
+                // ── Load button click ──
+                var btnLoad = document.getElementById('btn-load-period');
+                if (btnLoad) {
+                    btnLoad.addEventListener('click', function () {
+                        var m = document.getElementById('period-month-select');
+                        var y = document.getElementById('period-year-select');
+                        if (m && m.value && y && y.value) {
+                            var period = m.value + ' ' + y.value;
+                            loadDataForPeriod(period);
+                            // Close the dropdown after selecting
+                            $(periodMenu).closest('.dropdown').find('.dropdown-toggle').dropdown('toggle');
+                        }
+                    });
+                }
+
+                // ── Fetch & render data for a period ──
                 function loadDataForPeriod(period) {
                     document.getElementById('selected-period-text').textContent = period.toUpperCase();
                     fetch('api/get_data.php?periode=' + encodeURIComponent(period))
-                        .then(response => response.json())
-                        .then(result => {
+                        .then(function (response) { return response.json(); })
+                        .then(function (result) {
                             if (result.status === 'success' && result.data && result.data.length > 0) {
                                 console.log("Loaded data from database:", result.data.length, "rows for", period);
                                 var headers = Object.keys(result.data[0]);
+                                window.currentDashboardData = result.data;
+                                window.currentDashboardHeaders = headers;
                                 if (window.FormulaController) {
                                     setTimeout(function () {
                                         window.FormulaController.updateDashboardCards(result.data, headers);
@@ -518,29 +614,32 @@
                                     }, 100);
                                 }
                             } else {
-                                // Clear dashboard or show 0 if no data
                                 if (window.FormulaController) {
                                     window.FormulaController.updateDashboardCards([], []);
                                 }
                             }
                         })
-                        .catch(error => console.error('Error fetching data:', error));
+                        .catch(function (error) { console.error('Error fetching data:', error); });
                 }
 
-                // Initial load
+                // ── Initial load ──
                 loadPeriods();
 
-                // Expose loadPeriods globally so excel-upload.js can trigger it after upload
+                // Expose globally so excel-upload.js can trigger after upload
                 window.loadPeriods = loadPeriods;
 
-                // Delete Data Logic
-                const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+                // ── Delete Data Logic ──
+                var btnConfirmDelete = document.getElementById('btn-confirm-delete');
                 if (btnConfirmDelete) {
                     btnConfirmDelete.addEventListener('click', function () {
-                        const deleteSelect = document.getElementById('deletePeriodSelect');
-                        if (!deleteSelect || !deleteSelect.value) return;
+                        var delMonth = document.getElementById('deleteMonthSelect');
+                        var delYear = document.getElementById('deleteYearSelect');
+                        if (!delMonth || !delMonth.value || !delYear || !delYear.value) {
+                            alert('Please select both Month and Year to delete.');
+                            return;
+                        }
 
-                        const periodToDelete = deleteSelect.value;
+                        var periodToDelete = delMonth.value + ' ' + delYear.value;
 
                         if (!confirm("Are you SURE you want to delete all data for " + periodToDelete.toUpperCase() + "? This cannot be undone.")) {
                             return;
@@ -551,25 +650,26 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ periode: periodToDelete })
                         })
-                            .then(response => response.json())
-                            .then(result => {
+                            .then(function (response) { return response.json(); })
+                            .then(function (result) {
                                 if (result.status === 'success') {
                                     alert(result.message);
                                     $('#deleteDataModal').modal('hide');
 
-                                    // If the currently viewed period is the one deleted, clear the dashboard
-                                    const currentPeriodText = document.getElementById('selected-period-text').textContent;
+                                    var currentPeriodText = document.getElementById('selected-period-text').textContent;
                                     if (currentPeriodText.toLowerCase() === periodToDelete.toLowerCase()) {
                                         document.getElementById('selected-period-text').textContent = "PILIH DATA";
                                         if (window.FormulaController) {
                                             window.FormulaController.updateDashboardCards([], []);
                                         }
                                     }
+                                    // Refresh period selects
+                                    loadPeriods();
                                 } else {
                                     alert("Error deleting data: " + result.message);
                                 }
                             })
-                            .catch(error => {
+                            .catch(function (error) {
                                 console.error('Error:', error);
                                 alert("Failed to delete data.");
                             });

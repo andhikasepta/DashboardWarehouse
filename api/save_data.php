@@ -102,7 +102,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $pdo->commit();
             
-            echo json_encode(['status' => 'success', 'message' => 'Data saved successfully', 'periods' => array_keys($uploadedPeriods)]);
+            // Now that data is inserted, run the rebuild logic
+            require_once 'rebuild_in_out.php';
+            rebuildInOutStatus($pdo);
+            
+            // Get all periods for response
+            $periodStmt = $pdo->query("SELECT DISTINCT periode_group FROM assets ORDER BY created_at DESC");
+            $periods = $periodStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            echo json_encode([
+                'status' => 'success', 
+                'message' => 'Data saved successfully',
+                'periods' => $periods
+            ]);
         } catch(PDOException $e) {
             $pdo->rollBack();
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

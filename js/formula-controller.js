@@ -351,188 +351,195 @@
         }
 
         // 9. UTILISASI AREA / RACK TABLE
-        // Uses GRUP_RACK column for grouping.
-        // Capacity = (count of SPEC_CODE per rack / total SPEC_CODE) * 100
-        // Color: <=70% green, 71-90% yellow, >90% red
-        // UTILISASI SPACE card = average of all rack capacities
-        // FREE SPACE card = 100% - UTILISASI SPACE
         var tbody = document.getElementById('table-utilisasi-area-body');
         if (tbody) {
-            var rackCol = headers.indexOf('GRUP_RACK') !== -1
-                ? 'GRUP_RACK'
-                : findColumnByKeyword(headers, ['grup_rack', 'rack', 'area']);
-
-            var specCodeColRack = headers.indexOf('SPEC_CODE') !== -1
-                ? 'SPEC_CODE'
-                : findColumnByKeyword(headers, ['spec_code', 'spec code', 'spek']);
-
-            if (rackCol) {
-                // Group rows by unique GRUP_RACK
-                var rackGroups = {};
-                for (var p = 0; p < sheetData.length; p++) {
-                    var rack = String(sheetData[p][rackCol] || 'Unknown').trim();
-                    if (!rackGroups[rack]) {
-                        rackGroups[rack] = { data: [] };
-                    }
-                    rackGroups[rack].data.push(sheetData[p]);
-                }
-
-                var rackNames = Object.keys(rackGroups);
-                rackNames.sort(); // Sort alphabetically ascending by Rack/Area name
-
-                var totalItemsForRack = specCodeColRack
-                    ? FormulaController.computeCount(sheetData, specCodeColRack)
-                    : sheetData.length;
-
-                var greenCount = 0;
-                var yellowCount = 0;
-                var redCount = 0;
-                var rackCapacities = [];
-
-                // Clear existing table rows
-                tbody.replaceChildren();
-
-                for (var q = 0; q < rackNames.length; q++) {
-                    var rackData = rackGroups[rackNames[q]].data;
-                    var rackItemCount = specCodeColRack
-                        ? FormulaController.computeCount(rackData, specCodeColRack)
-                        : rackData.length;
-                    var capacity = totalItemsForRack > 0
-                        ? Math.round((rackItemCount / totalItemsForRack) * 100)
-                        : 0;
-                    rackCapacities.push(capacity);
-
-                    // Determine color class based on capacity
-                    var barColorClass;
-                    if (capacity <= 70) {
-                        barColorClass = 'bg-success';
-                        greenCount++;
-                    } else if (capacity <= 90) {
-                        barColorClass = 'bg-warning';
-                        yellowCount++;
-                    } else {
-                        barColorClass = 'bg-danger';
-                        redCount++;
+            tbody.replaceChildren(); // clear first
+            
+            // Fetch Rack Master data to know total slots
+            fetch('api/get_rack_data.php')
+                .then(function(response) { return response.json(); })
+                .then(function(rackResult) {
+                    var masterRackData = (rackResult.status === 'success' && rackResult.data) ? rackResult.data : [];
+                    
+                    // 1. Calculate Total Slots per Rack from master data
+                    var masterRackGroups = {};
+                    for (var i = 0; i < masterRackData.length; i++) {
+                        var row = masterRackData[i];
+                        var rName = String(row.rack || 'Unknown').trim();
+                        if (!masterRackGroups[rName]) {
+                            masterRackGroups[rName] = { totalSlots: 0, labels: {} };
+                        }
+                        masterRackGroups[rName].totalSlots++;
+                        if (row.label) {
+                            masterRackGroups[rName].labels[String(row.label).trim().toLowerCase()] = true;
+                        }
                     }
 
-                    // Build table row using createElement (no innerHTML)
-                    var tr = document.createElement('tr');
+                    // 2. Calculate Used Slots per Rack from asset data
+                    var usedSlotsPerRack = {};
+                    var subLocationCol = findColumnByKeyword(headers, ['sub_location', 'sub location', 'label', 'lokasi', 'location']);
+                    
+                    if (subLocationCol && sheetData.length > 0) {
+                        for (var j = 0; j < sheetData.length; j++) {
+                            var assetSubLoc = String(sheetData[j][subLocationCol] || '').trim().toLowerCase();
+                            if (!assetSubLoc) continue;
+                            
+                            // Find which rack this sub_location belongs to
+                            for (var rName in masterRackGroups) {
+                                if (masterRackGroups[rName].labels[assetSubLoc]) {
+                                    if (!usedSlotsPerRack[rName]) usedSlotsPerRack[rName] = 0;
+                                    usedSlotsPerRack[rName]++;
+                                    break; // asset can only be in one slot
+                                }
+                            }
+                        }
+                    }
 
-                    var tdName = document.createElement('td');
-                    tdName.textContent = rackNames[q];
-                    tdName.style.fontSize = '0.85rem';
-                    tdName.style.whiteSpace = 'nowrap';
+                    // 3. If there is no master data, fallback to old logic?
+                    // Let's just show what's in master data. If master is empty, show empty.
+                    var rackNames = Object.keys(masterRackGroups);
+                    rackNames.sort();
 
-                    var tdCapacity = document.createElement('td');
+                    var greenCount = 0;
+                    var yellowCount = 0;
+                    var redCount = 0;
+                    var rackCapacities = [];
 
-                    var progressWrap = document.createElement('div');
-                    progressWrap.className = 'd-flex align-items-center';
+                    for (var q = 0; q < rackNames.length; q++) {
+                        var rName = rackNames[q];
+                        var totalSlots = masterRackGroups[rName].totalSlots;
+                        var usedSlots = usedSlotsPerRack[rName] || 0;
+                        
+                        var capacity = totalSlots > 0 ? Math.round((usedSlots / totalSlots) * 100) : 0;
+                        if (capacity > 100) capacity = 100; // cap at 100% just in case
+                        
+                        rackCapacities.push(capacity);
 
-                    var percentLabel = document.createElement('span');
-                    percentLabel.className = 'mr-2 font-weight-bold';
-                    percentLabel.style.minWidth = '38px';
-                    percentLabel.style.fontSize = '0.8rem';
-                    percentLabel.textContent = capacity + '%';
-
-                    var progressOuter = document.createElement('div');
-                    progressOuter.className = 'progress progress-sm flex-grow-1';
-                    progressOuter.style.height = '10px';
-                    progressOuter.style.borderRadius = '5px';
-
-                    var progressInner = document.createElement('div');
-                    progressInner.className = 'progress-bar ' + barColorClass;
-                    progressInner.setAttribute('role', 'progressbar');
-                    progressInner.style.width = capacity + '%';
-                    progressInner.style.borderRadius = '5px';
-                    progressInner.style.transition = 'width 0.6s ease';
-
-                    progressOuter.appendChild(progressInner);
-                    progressWrap.appendChild(percentLabel);
-                    progressWrap.appendChild(progressOuter);
-                    tdCapacity.appendChild(progressWrap);
-
-                    tr.appendChild(tdName);
-                    tr.appendChild(tdCapacity);
-                    tbody.appendChild(tr);
-                }
-
-                // Update colored dot summary above the table header
-                var dotContainer = document.getElementById('rack-status-dots');
-                if (dotContainer) {
-                    dotContainer.replaceChildren();
-
-                    // Helper to create a dot badge
-                    function createDotBadge(colorClass, count) {
-                        var badge = document.createElement('span');
-                        badge.className = 'badge badge-pill mr-2 d-flex align-items-center';
-                        badge.style.fontSize = '0.75rem';
-                        badge.style.padding = '4px 10px';
-
-                        var dot = document.createElement('span');
-                        dot.style.display = 'inline-block';
-                        dot.style.width = '10px';
-                        dot.style.height = '10px';
-                        dot.style.borderRadius = '50%';
-                        dot.style.marginRight = '5px';
-
-                        if (colorClass === 'success') {
-                            dot.style.backgroundColor = '#1cc88a';
-                            badge.style.backgroundColor = 'rgba(28, 200, 138, 0.15)';
-                            badge.style.color = '#1cc88a';
-                        } else if (colorClass === 'warning') {
-                            dot.style.backgroundColor = '#f6c23e';
-                            badge.style.backgroundColor = 'rgba(246, 194, 62, 0.15)';
-                            badge.style.color = '#f6c23e';
+                        var barColorClass;
+                        if (capacity <= 70) {
+                            barColorClass = 'bg-success';
+                            greenCount++;
+                        } else if (capacity <= 90) {
+                            barColorClass = 'bg-warning';
+                            yellowCount++;
                         } else {
-                            dot.style.backgroundColor = '#e74a3b';
-                            badge.style.backgroundColor = 'rgba(231, 74, 59, 0.15)';
-                            badge.style.color = '#e74a3b';
+                            barColorClass = 'bg-danger';
+                            redCount++;
                         }
 
-                        badge.appendChild(dot);
-                        var countText = document.createTextNode(count);
-                        badge.appendChild(countText);
-                        return badge;
+                        var tr = document.createElement('tr');
+                        var tdName = document.createElement('td');
+                        tdName.textContent = rName;
+                        tdName.style.fontSize = '0.85rem';
+                        tdName.style.whiteSpace = 'nowrap';
+
+                        var tdCapacity = document.createElement('td');
+                        var progressWrap = document.createElement('div');
+                        progressWrap.className = 'd-flex align-items-center';
+
+                        var percentLabel = document.createElement('span');
+                        percentLabel.className = 'mr-2 font-weight-bold';
+                        percentLabel.style.minWidth = '38px';
+                        percentLabel.style.fontSize = '0.8rem';
+                        percentLabel.textContent = capacity + '%';
+
+                        var progressOuter = document.createElement('div');
+                        progressOuter.className = 'progress progress-sm flex-grow-1';
+                        progressOuter.style.height = '10px';
+                        progressOuter.style.borderRadius = '5px';
+
+                        var progressInner = document.createElement('div');
+                        progressInner.className = 'progress-bar ' + barColorClass;
+                        progressInner.setAttribute('role', 'progressbar');
+                        progressInner.style.width = capacity + '%';
+                        progressInner.style.borderRadius = '5px';
+                        progressInner.style.transition = 'width 0.6s ease';
+
+                        progressOuter.appendChild(progressInner);
+                        progressWrap.appendChild(percentLabel);
+                        progressWrap.appendChild(progressOuter);
+                        tdCapacity.appendChild(progressWrap);
+
+                        tr.appendChild(tdName);
+                        tr.appendChild(tdCapacity);
+                        tbody.appendChild(tr);
                     }
 
-                    dotContainer.appendChild(createDotBadge('success', greenCount));
-                    dotContainer.appendChild(createDotBadge('warning', yellowCount));
-                    dotContainer.appendChild(createDotBadge('danger', redCount));
-                }
+                    // Update colored dot summary
+                    var dotContainer = document.getElementById('rack-status-dots');
+                    if (dotContainer) {
+                        dotContainer.replaceChildren();
 
-                // 3 & 4. Update UTILISASI SPACE & FREE SPACE cards
-                // UTILISASI SPACE = average of all rack capacity percentages
-                var avgCapacity = 0;
-                if (rackCapacities.length > 0) {
-                    var sumCap = 0;
-                    for (var t = 0; t < rackCapacities.length; t++) {
-                        sumCap += rackCapacities[t];
+                        function createDotBadge(colorClass, count) {
+                            var badge = document.createElement('span');
+                            badge.className = 'badge badge-pill mr-2 d-flex align-items-center';
+                            badge.style.fontSize = '0.75rem';
+                            badge.style.padding = '4px 10px';
+
+                            var dot = document.createElement('span');
+                            dot.style.display = 'inline-block';
+                            dot.style.width = '10px';
+                            dot.style.height = '10px';
+                            dot.style.borderRadius = '50%';
+                            dot.style.marginRight = '5px';
+
+                            if (colorClass === 'success') {
+                                dot.style.backgroundColor = '#1cc88a';
+                                badge.style.backgroundColor = 'rgba(28, 200, 138, 0.15)';
+                                badge.style.color = '#1cc88a';
+                            } else if (colorClass === 'warning') {
+                                dot.style.backgroundColor = '#f6c23e';
+                                badge.style.backgroundColor = 'rgba(246, 194, 62, 0.15)';
+                                badge.style.color = '#f6c23e';
+                            } else {
+                                dot.style.backgroundColor = '#e74a3b';
+                                badge.style.backgroundColor = 'rgba(231, 74, 59, 0.15)';
+                                badge.style.color = '#e74a3b';
+                            }
+
+                            badge.appendChild(dot);
+                            badge.appendChild(document.createTextNode(count));
+                            return badge;
+                        }
+
+                        dotContainer.appendChild(createDotBadge('success', greenCount));
+                        dotContainer.appendChild(createDotBadge('warning', yellowCount));
+                        dotContainer.appendChild(createDotBadge('danger', redCount));
                     }
-                    avgCapacity = Math.round(sumCap / rackCapacities.length);
-                }
 
-                var utilPercent = avgCapacity;
-                var freePercent = 100 - utilPercent;
+                    // Update UTILISASI SPACE & FREE SPACE cards
+                    var avgCapacity = 0;
+                    if (rackCapacities.length > 0) {
+                        var sumCap = 0;
+                        for (var t = 0; t < rackCapacities.length; t++) {
+                            sumCap += rackCapacities[t];
+                        }
+                        avgCapacity = Math.round(sumCap / rackCapacities.length);
+                    }
 
-                var cardUtilText = document.getElementById('card-utilisasi-space-text');
-                var cardUtilBar = document.getElementById('card-utilisasi-space-bar');
-                var cardFreeText = document.getElementById('card-free-space-text');
-                var cardFreeBar = document.getElementById('card-free-space-bar');
+                    var utilPercent = avgCapacity;
+                    var freePercent = 100 - utilPercent;
 
-                if (cardUtilText) cardUtilText.textContent = utilPercent + '%';
-                if (cardUtilBar) {
-                    cardUtilBar.style.width = utilPercent + '%';
-                    cardUtilBar.setAttribute('aria-valuenow', utilPercent);
-                    cardUtilBar.className = 'progress-bar ' + getUtilisasiClass(utilPercent);
-                }
+                    var cardUtilText = document.getElementById('card-utilisasi-space-text');
+                    var cardUtilBar = document.getElementById('card-utilisasi-space-bar');
+                    var cardFreeText = document.getElementById('card-free-space-text');
+                    var cardFreeBar = document.getElementById('card-free-space-bar');
 
-                if (cardFreeText) cardFreeText.textContent = freePercent + '%';
-                if (cardFreeBar) {
-                    cardFreeBar.style.width = freePercent + '%';
-                    cardFreeBar.setAttribute('aria-valuenow', freePercent);
-                    cardFreeBar.className = 'progress-bar ' + getFreeSpaceClass(freePercent);
-                }
-            }
+                    if (cardUtilText) cardUtilText.textContent = utilPercent + '%';
+                    if (cardUtilBar) {
+                        cardUtilBar.style.width = utilPercent + '%';
+                        cardUtilBar.setAttribute('aria-valuenow', utilPercent);
+                        cardUtilBar.className = 'progress-bar ' + getUtilisasiClass(utilPercent);
+                    }
+
+                    if (cardFreeText) cardFreeText.textContent = freePercent + '%';
+                    if (cardFreeBar) {
+                        cardFreeBar.style.width = freePercent + '%';
+                        cardFreeBar.setAttribute('aria-valuenow', freePercent);
+                        cardFreeBar.className = 'progress-bar ' + getFreeSpaceClass(freePercent);
+                    }
+                })
+                .catch(function(err) { console.error('Error fetching rack data:', err); });
         }
     };
 

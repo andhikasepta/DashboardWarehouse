@@ -5,7 +5,7 @@ require_once '../config/database.php';
 header('Content-Type: application/json');
 
 try {
-    $stmt = $pdo->query("SELECT DISTINCT periode_group FROM assets WHERE periode_group IS NOT NULL ORDER BY created_at DESC");
+    $stmt = $pdo->query("SELECT DISTINCT periode_group FROM assets WHERE periode_group IS NOT NULL");
     $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
     // Sort periods nicely if possible, but distinct string might suffice.

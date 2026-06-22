@@ -394,8 +394,11 @@
             return;
         }
 
+        var dataType = document.getElementById('upload-data-type').value;
+        var apiEndpoint = dataType === 'rack' ? 'api/save_rack_data.php' : 'api/save_data.php';
+
         // Send data to PHP backend to save to database
-        fetch('api/save_data.php', {
+        fetch(apiEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -407,12 +410,19 @@
             if (result.status === 'success') {
                 showToast('Data saved to database successfully!', 'success');
                 
-                // Refresh periods and select the newly uploaded one
-                if (window.loadPeriods) {
-                    let newPeriod = (result.periods && result.periods.length > 0) ? result.periods[0] : null;
-                    window.loadPeriods(newPeriod);
-                } else if (window.FormulaController) {
-                    window.FormulaController.updateDashboardCards(currentSheetData, currentHeaders);
+                if (dataType === 'rack') {
+                    // For rack master data, we just want to refresh the dashboard if data is loaded
+                    if (window.FormulaController && window.currentDashboardData) {
+                        window.FormulaController.updateDashboardCards(window.currentDashboardData, window.currentDashboardHeaders);
+                    }
+                } else {
+                    // For asset data, refresh periods and select the newly uploaded one
+                    if (window.loadPeriods) {
+                        let newPeriod = (result.periods && result.periods.length > 0) ? result.periods[0] : null;
+                        window.loadPeriods(newPeriod);
+                    } else if (window.FormulaController) {
+                        window.FormulaController.updateDashboardCards(currentSheetData, currentHeaders);
+                    }
                 }
 
                 showToast('Dashboard updated successfully!', 'success');

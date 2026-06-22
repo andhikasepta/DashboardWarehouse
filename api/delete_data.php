@@ -17,6 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $deletedRows = $stmt->rowCount();
             
+            // Rebuild IN/OUT since a period was completely removed
+            require_once 'rebuild_in_out.php';
+            rebuildInOutStatus($pdo);
+            
             echo json_encode([
                 'status' => 'success', 
                 'message' => "Data for $periode deleted successfully.",
