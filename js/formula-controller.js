@@ -114,7 +114,37 @@
 
     // Main entry point to update cards
     FormulaController.updateDashboardCards = function (sheetData, headers) {
-        if (!sheetData || sheetData.length === 0) return;
+        if (!sheetData || sheetData.length === 0) {
+            console.log("Formula Controller: Clearing dashboard...");
+            // Reset cards to 0
+            var cardAsset = document.getElementById('card-total-asset');
+            if (cardAsset) cardAsset.textContent = '0';
+            var cardNbv = document.getElementById('card-total-nbv');
+            if (cardNbv) cardNbv.textContent = 'Rp 0';
+            var cardUtilText = document.getElementById('card-utilisasi-space-text');
+            if (cardUtilText) cardUtilText.textContent = '0%';
+            var cardUtilBar = document.getElementById('card-utilisasi-space-bar');
+            if (cardUtilBar) { cardUtilBar.style.width = '0%'; cardUtilBar.className = 'progress-bar bg-danger'; }
+            var cardFreeText = document.getElementById('card-free-space-text');
+            if (cardFreeText) cardFreeText.textContent = '0%';
+            var cardFreeBar = document.getElementById('card-free-space-bar');
+            if (cardFreeBar) { cardFreeBar.style.width = '0%'; cardFreeBar.className = 'progress-bar bg-danger'; }
+            var cardUpdate = document.getElementById('card-last-update');
+            if (cardUpdate) cardUpdate.textContent = '-';
+            
+            // Clear charts
+            if (window.myBarChart && window.myBarChart.data) { window.myBarChart.data.labels = []; window.myBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.myBarChart.update(); }
+            if (window.myHorizontalBarChart && window.myHorizontalBarChart.data) { window.myHorizontalBarChart.data.labels = []; window.myHorizontalBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.myHorizontalBarChart.update(); }
+            if (window.agingBarChart && window.agingBarChart.data) { window.agingBarChart.data.labels = []; window.agingBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.agingBarChart.update(); }
+            
+            // Clear table
+            var tbody = document.getElementById('table-utilisasi-area-body');
+            if (tbody) tbody.replaceChildren();
+            var dotContainer = document.getElementById('rack-status-dots');
+            if (dotContainer) dotContainer.replaceChildren();
+
+            return;
+        }
 
         console.log("Formula Controller: Updating cards from data...", headers);
 

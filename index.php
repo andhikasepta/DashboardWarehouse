@@ -36,18 +36,35 @@
                         </div>
                     </form>
                     <ul class="navbar-nav ml-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" id="nav-upload-file" data-toggle="modal"
-                                data-target="#uploadExcelModal">
-                                <i class="fas fa-file-excel fa-sm fa-fw mr-2 text-gray-400"></i>
-                                Upload Excel
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="periodDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small" id="selected-period-text"
+                                    style="font-weight: bold;">PILIH DATA</span> <i
+                                    class="fas fa-chevron-down fa-sm fa-fw text-gray-400"></i>
                             </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="periodDropdown" id="period-dropdown-menu">
+                                <!-- Periods injected here -->
+                            </div>
                         </li>
+                        <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link" href="" id="userDropdown">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i
-                                        class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
                             </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#uploadExcelModal">
+                                    <i class="fas fa-file-excel fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Upload Excel
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#deleteDataModal">
+                                    <i class="fas fa-trash fa-sm fa-fw mr-2 text-danger"></i>
+                                    Delete Data
+                                </a>
+                            </div>
                         </li>
                     </ul>
                 </nav>
@@ -289,9 +306,37 @@
             <i class="fas fa-angle-up"></i>
         </a>
 
+        <!-- Delete Data Modal-->
+        <div class="modal fade" id="deleteDataModal" tabindex="-1" role="dialog" aria-labelledby="deleteDataModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="deleteDataModalLabel">Delete Data by Period</h5>
+                        <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Select a period to delete all its associated data from the database.</p>
+                        <div class="form-group">
+                            <label for="deletePeriodSelect">Select Period</label>
+                            <select class="form-control" id="deletePeriodSelect">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                        <button class="btn btn-danger" type="button" id="btn-confirm-delete">Delete Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="uploadExcelModal" tabindex="-1" role="dialog"
             aria-labelledby="uploadExcelModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+            <div class="modal-dialog modal-md modal-dialog-centered" role="document" id="uploadExcelModalDialog">
                 <div class="modal-content upload-modal-content">
                     <div class="modal-header upload-modal-header">
                         <h5 class="modal-title" id="uploadExcelModalLabel">
@@ -303,7 +348,7 @@
                     </div>
                     <div class="modal-body upload-modal-body">
                         <div class="row">
-                            <div class="col-lg-6">
+                            <div class="col-lg-12" id="uploadModalLeftCol">
                                 <div class="upload-drop-zone" id="upload-drop-zone">
                                     <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv"
                                         style="display:none" />
@@ -330,7 +375,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-6">
+                            <div class="col-lg-6" id="uploadModalRightCol" style="display: none;">
                                 <div class="upload-controls" id="upload-controls">
                                     <div class="form-group">
                                         <label for="sheet-select">Select Sheet</label>
@@ -404,6 +449,133 @@
                     });
                 }
             })();
+        </script>
+
+        <!-- Fetch data from database on load -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Fetch periods statically for 2026
+                function loadPeriods(selectPeriod = null) {
+                    const months = [
+                        "January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"
+                    ];
+                    const periods = months.map(m => m + ' 2026');
+
+                    const menu = document.getElementById('period-dropdown-menu');
+                    if (menu) menu.replaceChildren();
+
+                    const deleteSelect = document.getElementById('deletePeriodSelect');
+                    if (deleteSelect) deleteSelect.replaceChildren();
+
+                    periods.forEach(function (period) {
+                        if (menu) {
+                            const a = document.createElement('a');
+                            a.className = 'dropdown-item';
+                            a.href = '#';
+                            a.textContent = period.toUpperCase();
+                            a.addEventListener('click', function (e) {
+                                e.preventDefault();
+                                loadDataForPeriod(period);
+                            });
+                            menu.appendChild(a);
+                        }
+
+                        if (deleteSelect) {
+                            const opt = document.createElement('option');
+                            opt.value = period;
+                            opt.textContent = period.toUpperCase();
+                            deleteSelect.appendChild(opt);
+                        }
+                    });
+
+                    // Load default or selected
+                    if (selectPeriod) {
+                        loadDataForPeriod(selectPeriod);
+                    } else {
+                        document.getElementById('selected-period-text').textContent = "PILIH DATA";
+                        if (window.FormulaController) {
+                            window.FormulaController.updateDashboardCards([], []);
+                        }
+                    }
+                }
+
+                function loadDataForPeriod(period) {
+                    document.getElementById('selected-period-text').textContent = period.toUpperCase();
+                    fetch('api/get_data.php?periode=' + encodeURIComponent(period))
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.status === 'success' && result.data && result.data.length > 0) {
+                                console.log("Loaded data from database:", result.data.length, "rows for", period);
+                                var headers = Object.keys(result.data[0]);
+                                if (window.FormulaController) {
+                                    setTimeout(function () {
+                                        window.FormulaController.updateDashboardCards(result.data, headers);
+                                        var cardUpdate = document.getElementById('card-last-update');
+                                        if (cardUpdate) {
+                                            cardUpdate.textContent = period.toUpperCase();
+                                        }
+                                    }, 100);
+                                }
+                            } else {
+                                // Clear dashboard or show 0 if no data
+                                if (window.FormulaController) {
+                                    window.FormulaController.updateDashboardCards([], []);
+                                }
+                            }
+                        })
+                        .catch(error => console.error('Error fetching data:', error));
+                }
+
+                // Initial load
+                loadPeriods();
+
+                // Expose loadPeriods globally so excel-upload.js can trigger it after upload
+                window.loadPeriods = loadPeriods;
+
+                // Delete Data Logic
+                const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+                if (btnConfirmDelete) {
+                    btnConfirmDelete.addEventListener('click', function () {
+                        const deleteSelect = document.getElementById('deletePeriodSelect');
+                        if (!deleteSelect || !deleteSelect.value) return;
+
+                        const periodToDelete = deleteSelect.value;
+
+                        if (!confirm("Are you SURE you want to delete all data for " + periodToDelete.toUpperCase() + "? This cannot be undone.")) {
+                            return;
+                        }
+
+                        fetch('api/delete_data.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ periode: periodToDelete })
+                        })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.status === 'success') {
+                                    alert(result.message);
+                                    $('#deleteDataModal').modal('hide');
+
+                                    // If the currently viewed period is the one deleted, clear the dashboard
+                                    const currentPeriodText = document.getElementById('selected-period-text').textContent;
+                                    if (currentPeriodText.toLowerCase() === periodToDelete.toLowerCase()) {
+                                        document.getElementById('selected-period-text').textContent = "PILIH DATA";
+                                        if (window.FormulaController) {
+                                            window.FormulaController.updateDashboardCards([], []);
+                                        }
+                                    }
+                                } else {
+                                    alert("Error deleting data: " + result.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert("Failed to delete data.");
+                            });
+                    });
+                }
+            });
         </script>
 
 </body>

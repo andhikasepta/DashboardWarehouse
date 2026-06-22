@@ -148,6 +148,11 @@
                 generateCharts();
             });
         }
+
+        // Reset modal state when hidden
+        $('#uploadExcelModal').on('hidden.bs.modal', function () {
+            resetUpload();
+        });
     }
 
     // ── File Handling ──────────────────────────────────────
@@ -178,6 +183,7 @@
                 completeProgress();
                 populateSheetSelector();
                 loadSheet(parsedWorkbook.SheetNames[0]);
+                setModalExpanded(true);
                 showToast('File loaded successfully! ' + parsedWorkbook.SheetNames.length + ' sheet(s) found.', 'success');
             } catch (err) {
                 showToast('Failed to parse file. Please check the format.', 'error');
@@ -220,6 +226,27 @@
         parsedWorkbook = null;
         currentSheetData = null;
         currentHeaders = null;
+        if (fileInput) fileInput.value = '';
+        setModalExpanded(false);
+    }
+
+    function setModalExpanded(isExpanded) {
+        var dialog = document.getElementById('uploadExcelModalDialog');
+        var leftCol = document.getElementById('uploadModalLeftCol');
+        var rightCol = document.getElementById('uploadModalRightCol');
+        if (dialog && leftCol && rightCol) {
+            if (isExpanded) {
+                dialog.classList.add('modal-expanded');
+                leftCol.classList.remove('col-lg-12');
+                leftCol.classList.add('col-lg-6');
+                rightCol.style.display = 'block';
+            } else {
+                dialog.classList.remove('modal-expanded');
+                leftCol.classList.remove('col-lg-6');
+                leftCol.classList.add('col-lg-12');
+                rightCol.style.display = 'none';
+            }
+        }
     }
 
     // ── Sheet Loading ─────────────────────────────────────
@@ -367,12 +394,36 @@
             return;
         }
 
-        // Update the top summary dashboard cards using the dedicated formula controller
-        if (window.FormulaController) {
-            window.FormulaController.updateDashboardCards(currentSheetData, currentHeaders);
-        }
+        // Send data to PHP backend to save to database
+        fetch('api/save_data.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(currentSheetData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showToast('Data saved to database successfully!', 'success');
+                
+                // Refresh periods and select the newly uploaded one
+                if (window.loadPeriods) {
+                    let newPeriod = (result.periods && result.periods.length > 0) ? result.periods[0] : null;
+                    window.loadPeriods(newPeriod);
+                } else if (window.FormulaController) {
+                    window.FormulaController.updateDashboardCards(currentSheetData, currentHeaders);
+                }
 
-        showToast('Dashboard updated successfully!', 'success');
+                showToast('Dashboard updated successfully!', 'success');
+            } else {
+                showToast('Failed to save to database: ' + result.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving data:', error);
+            showToast('Network error while saving data.', 'error');
+        });
     }
 
 
