@@ -1,19 +1,27 @@
 <?php
 // config/database.php
 
-$host = 'localhost';
+// Laragon
+$host = '127.0.0.1'; 
+$port = '3306';      
 $user = 'root';
-$password = '';
+$password = '';      
 $dbname = 'dashboard_db';
 
+// Mac (MAMP)
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'MAC' || PHP_OS === 'Darwin') {
+    $port = '8889';      
+    $password = 'root'; 
+}
+
 try {
-    // Connect without dbname first to create it if it doesn't exist
-    $pdo = new PDO("mysql:host=$host", $user, $password);
+    // Koneksi menggunakan host dan port yang sudah dideteksi otomatis
+    $pdo = new PDO("mysql:host=$host;port=$port", $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
     $pdo->exec("USE `$dbname`");
     
-    // Ensure rack_master table exists for Rack Utilization feature
+    // Memastikan tabel rack_master tersedia
     $pdo->exec("CREATE TABLE IF NOT EXISTS `rack_master` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `label` VARCHAR(255) NOT NULL UNIQUE,
