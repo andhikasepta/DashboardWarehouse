@@ -169,10 +169,10 @@
 
     function formatPeriode(rawDate) {
         if (!rawDate) return 'Unknown Period';
-        
+
         var str = String(rawDate).toUpperCase();
         var currentYear = new Date().getFullYear();
-        
+
         var months = {
             'JAN': 'January',
             'FEB': 'February',
@@ -187,45 +187,45 @@
             'NOV': 'November',
             'DES': 'December'
         };
-        
+
         for (var key in months) {
             if (str.indexOf(key) !== -1) {
                 return months[key] + ' ' + currentYear;
             }
         }
-        
+
         return 'Unknown Period';
     }
 
     // ── Modern Upload Steps UI Helpers ──
     function createUploadStepsUI() {
         if (!progressContainer) return;
-        
+
         progressContainer.replaceChildren();
 
         var fileInfo = document.createElement('div');
         fileInfo.className = 'upload-file-info mb-3';
-        
+
         var fnSpan = document.createElement('span');
         fnSpan.id = 'upload-file-name';
         fnSpan.className = 'file-name';
         fileInfo.appendChild(fnSpan);
-        
+
         var fsSpan = document.createElement('span');
         fsSpan.id = 'upload-file-size';
         fsSpan.className = 'file-size';
         fileInfo.appendChild(fsSpan);
-        
+
         progressContainer.appendChild(fileInfo);
 
         var stepsList = document.createElement('div');
         stepsList.className = 'upload-steps-list';
 
         var steps = [
-            { id: 'step-read', label: 'Reading file...', icon: 'fa-file' },
-            { id: 'step-parse', label: 'Parsing data sheet...', icon: 'fa-table' },
-            { id: 'step-upload', label: 'Saving to database...', icon: 'fa-database', hasProgress: true },
-            { id: 'step-finalize', label: 'Finalizing & updating dashboard...', icon: 'fa-sync-alt' }
+            { id: 'step-read', label: 'Upload File...', icon: 'fa-file' },
+            { id: 'step-parse', label: 'Memindai Sheet...', icon: 'fa-table' },
+            { id: 'step-upload', label: 'Menyimpan ke Database...', icon: 'fa-database', hasProgress: true },
+            { id: 'step-finalize', label: 'Finalisasi & Update Data...', icon: 'fa-sync-alt' }
         ];
 
         steps.forEach(function (step) {
@@ -331,7 +331,7 @@
         var browseBtn = document.getElementById('btn-browse-file');
         var generateBtn = document.getElementById('btn-generate-charts');
         var dataTypeSelect = document.getElementById('upload-data-type');
-        
+
         if (allowInteraction) {
             // Enable closing modal
             var modalData = modal.data('bs.modal');
@@ -339,12 +339,12 @@
                 modalData._config.backdrop = true;
                 modalData._config.keyboard = true;
             }
-            
+
             // Show close buttons
             closeBtns.forEach(function (btn) {
                 btn.style.display = '';
             });
-            
+
             // Enable inputs & buttons
             if (browseBtn) browseBtn.removeAttribute('disabled');
             if (generateBtn) generateBtn.removeAttribute('disabled');
@@ -356,12 +356,12 @@
                 modalData._config.backdrop = 'static';
                 modalData._config.keyboard = false;
             }
-            
+
             // Hide close buttons
             closeBtns.forEach(function (btn) {
                 btn.style.display = 'none';
             });
-            
+
             // Disable inputs & buttons
             if (browseBtn) browseBtn.setAttribute('disabled', 'true');
             if (generateBtn) generateBtn.setAttribute('disabled', 'true');
@@ -602,15 +602,15 @@
         var apiEndpoint = dataType === 'rack' ? 'api/save_rack_data.php' : 'api/save_data.php';
 
         toggleModalInteractivity(false);
-        
+
         var totalRowsForEst = currentSheetData.length;
         var estSeconds = Math.max(5, Math.ceil(totalRowsForEst / 5000) * 5);
         var estTimeText = estSeconds < 60 ? estSeconds + " seconds" : Math.ceil(estSeconds / 60) + " minutes";
-        
+
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 title: 'Data is loading...',
-                html: 'Please do not refresh the page.<br><br><span style="font-size: 0.9em; color: #666;"><i class="fas fa-clock mr-1"></i> Estimated time: ~' + estTimeText + '</span>',
+                html: 'Please do not refresh the page.<br><br><span style="font-size: 0.9em; color: #666;"><i class="fas fa-clock mr-1"></i> Estimasi Waktu: ~' + estTimeText + '</span>',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 didOpen: () => {
@@ -641,7 +641,7 @@
             var activeSheetName = sheetSelect ? sheetSelect.value : '';
             var pGroup = formatPeriode(activeSheetName);
             initPayload.periods = [pGroup];
-            
+
             // Add the sheetName to each row so the backend knows what to use for periode
             for (var idx = 0; idx < totalRows; idx++) {
                 localSheetData[idx]['periode'] = activeSheetName;
@@ -653,16 +653,16 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(initPayload)
         })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-            if (res.status !== 'success') {
-                throw new Error(res.message || 'Initialization failed');
-            }
-            sendNextBatch(0);
-        })
-        .catch(function (err) {
-            handleUploadError(err.message || 'Error occurred during initialization');
-        });
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.status !== 'success') {
+                    throw new Error(res.message || 'Initialization failed');
+                }
+                sendNextBatch(0);
+            })
+            .catch(function (err) {
+                handleUploadError(err.message || 'Error occurred during initialization');
+            });
 
         function sendNextBatch(startIndex) {
             if (startIndex >= totalRows) {
@@ -685,30 +685,30 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(appendPayload)
             })
-            .then(function (r) { return r.json(); })
-            .then(function (res) {
-                if (res.status !== 'success') {
-                    throw new Error(res.message || 'Batch upload failed');
-                }
-                
-                uploadedCount += batchRows.length;
-                
-                var percent = (uploadedCount / totalRows) * 100;
-                if (batchProgressText) {
-                    batchProgressText.textContent = number_format(uploadedCount, 0, '.', ',') + ' / ' + number_format(totalRows, 0, '.', ',') + ' rows';
-                }
-                if (batchProgressBarFill) {
-                    batchProgressBarFill.style.width = percent + '%';
-                }
-                if (batchProgressPercent) {
-                    batchProgressPercent.textContent = Math.round(percent) + '%';
-                }
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.status !== 'success') {
+                        throw new Error(res.message || 'Batch upload failed');
+                    }
 
-                sendNextBatch(endIndex);
-            })
-            .catch(function (err) {
-                handleUploadError(err.message || 'Error uploading database batch');
-            });
+                    uploadedCount += batchRows.length;
+
+                    var percent = (uploadedCount / totalRows) * 100;
+                    if (batchProgressText) {
+                        batchProgressText.textContent = number_format(uploadedCount, 0, '.', ',') + ' / ' + number_format(totalRows, 0, '.', ',') + ' rows';
+                    }
+                    if (batchProgressBarFill) {
+                        batchProgressBarFill.style.width = percent + '%';
+                    }
+                    if (batchProgressPercent) {
+                        batchProgressPercent.textContent = Math.round(percent) + '%';
+                    }
+
+                    sendNextBatch(endIndex);
+                })
+                .catch(function (err) {
+                    handleUploadError(err.message || 'Error uploading database batch');
+                });
         }
 
         function finalizeUpload() {
@@ -718,51 +718,51 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(finalizePayload)
             })
-            .then(function (r) { return r.json(); })
-            .then(function (res) {
-                if (res.status !== 'success') {
-                    throw new Error(res.message || 'Finalization failed');
-                }
-
-                setStepState('step-finalize', 'completed');
-                showToast('Data saved successfully!', 'success');
-
-                if (dataType === 'rack') {
-                    if (window.FormulaController && window.currentDashboardData) {
-                        try { window.FormulaController.updateDashboardCards(window.currentDashboardData, window.currentDashboardHeaders); } catch(e) {}
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.status !== 'success') {
+                        throw new Error(res.message || 'Finalization failed');
                     }
-                } else {
-                    if (window.loadPeriods) {
-                        var newPeriod = (res.periods && res.periods.length > 0) ? res.periods[0] : null;
-                        window.loadPeriods(newPeriod);
-                    } else if (window.FormulaController) {
-                        try { window.FormulaController.updateDashboardCards(localSheetData, currentHeaders); } catch(e) {}
-                    }
-                }
 
-                showToast('Dashboard updated successfully!', 'success');
+                    setStepState('step-finalize', 'completed');
+                    showToast('Data saved successfully!', 'success');
 
-                setTimeout(function () {
-                    toggleModalInteractivity(true);
-                    $('#uploadExcelModal').modal('hide');
-                    resetUpload();
-                    
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            title: 'Data Upload Success!',
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        }).then(function() {
-                            window.location.reload();
-                        });
+                    if (dataType === 'rack') {
+                        if (window.FormulaController && window.currentDashboardData) {
+                            try { window.FormulaController.updateDashboardCards(window.currentDashboardData, window.currentDashboardHeaders); } catch (e) { }
+                        }
                     } else {
-                        window.location.reload();
+                        if (window.loadPeriods) {
+                            var newPeriod = (res.periods && res.periods.length > 0) ? res.periods[0] : null;
+                            window.loadPeriods(newPeriod);
+                        } else if (window.FormulaController) {
+                            try { window.FormulaController.updateDashboardCards(localSheetData, currentHeaders); } catch (e) { }
+                        }
                     }
-                }, 1000);
-            })
-            .catch(function (err) {
-                handleUploadError(err.message || 'Error during finalization');
-            });
+
+                    showToast('Dashboard updated successfully!', 'success');
+
+                    setTimeout(function () {
+                        toggleModalInteractivity(true);
+                        $('#uploadExcelModal').modal('hide');
+                        resetUpload();
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Data Upload Success!',
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(function () {
+                                window.location.reload();
+                            });
+                        } else {
+                            window.location.reload();
+                        }
+                    }, 1000);
+                })
+                .catch(function (err) {
+                    handleUploadError(err.message || 'Error during finalization');
+                });
         }
 
         function handleUploadError(msg) {
@@ -777,7 +777,7 @@
                 showToast(msg, 'error');
             }
             toggleModalInteractivity(true);
-            
+
             setStepState('step-upload', 'pending');
             setStepState('step-finalize', 'pending');
             if (batchProgressContainer) {

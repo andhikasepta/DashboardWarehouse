@@ -44,7 +44,7 @@
             <div id="content" class="flex-grow-1">
                 
                 <!-- Topbar -->
-                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 fixed-top shadow" style="z-index: 1020;">
                     <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
                             <a href="index.php"><img src="img/Lintasarta.png" alt="" width="150px"></a>
@@ -55,7 +55,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="index.php">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 font-weight-bold">
-                                    <i class="fas fa-chart-line mr-1"></i> Dashboard
+                                    <i class="fas fa-th-large mr-1"></i> Dashboard
                                 </span>
                             </a>
                         </li>
@@ -72,7 +72,7 @@
                         <!-- User Information (Static) -->
                         <li class="nav-item d-flex align-items-center">
                             <span class="nav-link pr-0">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>LISKA DWI NURYATI</span>
                             </span>
                         </li>
                     </ul>
@@ -80,7 +80,7 @@
                 <!-- End of Topbar -->
 
                 <!-- Begin Page Content -->
-                <div class="container-fluid">
+                <div class="container-fluid" style="padding-top: 100px;">
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800">Master Data</h1>
                         <div>
@@ -88,7 +88,7 @@
                                 <i class="fas fa-file-excel mr-1"></i> Upload Excel
                             </button>
                             <button class="btn btn-danger" data-toggle="modal" data-target="#deleteDataModal">
-                                <i class="fas fa-trash-alt mr-1"></i> Delete Data
+                                <i class="fas fa-trash-alt mr-1"></i> Hapus Data
                             </button>
                         </div>
                     </div>
@@ -109,7 +109,7 @@
                         <div class="tab-pane fade show active" id="asset-data" role="tabpanel" aria-labelledby="asset-tab">
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-primary">Table Data Asset</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">Tabel Data Asset</h6>
                                 </div>
                                 <div class="card-body">
                                     
@@ -162,7 +162,7 @@
                         <div class="tab-pane fade" id="rack-data" role="tabpanel" aria-labelledby="rack-tab">
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Table Master Utilisasi Rack</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">Tabel Master Utilisasi Rack</h6>
                                 </div>
                                 <div class="card-body">
                                     
@@ -213,7 +213,7 @@
             <footer class="sticky-footer bg-white mt-auto">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Dashboard Warehouse 2026</span>
+                        <span>Copyright &copy; Andhika Septa Prawira 2026</span>
                     </div>
                 </div>
             </footer>
@@ -227,7 +227,7 @@
             <div class="modal-content upload-modal-content">
                 <div class="modal-header upload-modal-header" style="background: linear-gradient(135deg, #e74a3b 0%, #be2617 100%);">
                     <h5 class="modal-title text-white" id="deleteDataModalLabel">
-                        <i class="fas fa-trash-alt mr-2 text-white"></i>Delete Data by Period
+                        <i class="fas fa-trash-alt mr-2 text-white"></i>Hapus Data
                     </h5>
                     <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
                         <span aria-hidden="true">×</span>
@@ -235,7 +235,10 @@
                 </div>
                 <div class="modal-body upload-modal-body">
                     <div class="p-3">
-                        <p class="text-center text-gray-600 mb-4">Select a period to permanently delete all its associated data from the database.</p>
+                        <div class="text-center text-gray-600 mb-4">
+                            <h3 class="text-danger font-weight-bold mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Peringatan</h3>
+                            <p class="mb-0" style="font-size: 1.1rem;">Data yang Anda pilih akan dihapus secara permanen dari sistem dan tidak dapat dikembalikan.</p>
+                        </div>
                         <div class="form-group mb-3">
                             <label for="deleteMonthSelect" class="small font-weight-bold text-gray-600">Bulan</label>
                             <select class="form-control form-control-sm" id="deleteMonthSelect">
@@ -311,7 +314,7 @@
                         <div class="col-lg-6" id="uploadModalRightCol" style="display: none;">
                             <div class="upload-controls" id="upload-controls">
                                 <div class="form-group">
-                                    <label for="sheet-select">Select Sheet</label>
+                                    <label for="sheet-select">Pilih Sheet</label>
                                     <select class="form-control" id="sheet-select"></select>
                                 </div>
                                 <button class="btn-generate" id="btn-generate-charts" type="button" disabled>
@@ -344,6 +347,20 @@
     <script src="js/master-data.js?v=<?= time() ?>"></script>
     
     <script>
+        $(document).ready(function() {
+            // Restore active tab from localStorage if exists
+            var activeTab = localStorage.getItem('activeMasterDataTab');
+            if (activeTab) {
+                $('#masterDataTabs a[href="' + activeTab + '"]').tab('show');
+            }
+
+            // Save active tab to localStorage on click
+            $('#masterDataTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var targetTab = $(e.target).attr("href");
+                localStorage.setItem('activeMasterDataTab', targetTab);
+            });
+        });
+
         // Close modal after chart generation/saving
         var genBtn = document.getElementById('btn-generate-charts');
         if (genBtn) {

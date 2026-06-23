@@ -26,7 +26,7 @@
     <div id="wrapper">
         <div id="content-wrapper" class="d-flex flex-column min-vh-100">
             <div id="content" class="flex-grow-1">
-                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 fixed-top shadow" style="z-index: 1020;">
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                         <i class="fa fa-bars"></i>
                     </button>
@@ -69,7 +69,7 @@
                         <li class="nav-item active">
                             <a class="nav-link" href="index.php">
                                 <span class="mr-2 d-none d-lg-inline text-primary font-weight-bold">
-                                    <i class="fas fa-chart-line mr-1"></i> Dashboard
+                                    <i class="fas fa-th-large mr-1"></i> Dashboard
                                 </span>
                             </a>
                         </li>
@@ -86,12 +86,12 @@
                         <!-- User Information (Static) -->
                         <li class="nav-item d-flex align-items-center">
                             <span class="nav-link pr-0">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>ANDHIKA SEPTA</span>
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small"><i class="fa fa-user mr-2 text-gray-400"></i>LISKA DWI NURYATI</span>
                             </span>
                         </li>
                     </ul>
                 </nav>
-                <div class="container-fluid">
+                <div class="container-fluid" style="padding-top: 100px;">
                     <div class="row">
                         <div class="col-xl-3 col-md-6 mb-4">
                             <div class="card border-left-primary shadow h-100 py-2">
@@ -194,7 +194,7 @@
                                         <div class="col mr-2">
                                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                                 LAST UPDATE</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="card-last-update">-
+                                            <div class="mb-0 font-weight-bold text-gray-800" style="font-size: 0.9rem;" id="card-last-update">-
                                             </div>
                                         </div>
                                         <div class="col-auto">
@@ -320,7 +320,7 @@
                 <footer class="sticky-footer bg-white">
                     <div class="container my-auto">
                         <div class="copyright text-center my-auto">
-                            <span>Copyright &copy; Andhikasep</span>
+                            <span>Copyright &copy; Andhika Septa Prawira 2026</span>
                         </div>
                     </div>
                 </footer>
@@ -337,13 +337,16 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title" id="deleteDataModalLabel">Delete Data by Period</h5>
+                        <h5 class="modal-title" id="deleteDataModalLabel">Hapus Data</h5>
                         <button class="close text-white" type="button" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">×</span>
                         </button>
                     </div>
-                    <div class="modal-body">
-                        <p>Select a period to delete all its associated data from the database.</p>
+                    <div class="modal-body p-4">
+                        <div class="text-center text-gray-600 mb-4">
+                            <h1 class="text-danger font-weight-bold mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Peringatan</h1>
+                            <p class="mb-0" style="font-size: 1.1rem;">Data yang Anda pilih akan dihapus secara permanen dari sistem dan tidak dapat dikembalikan.</p>
+                        </div>
                         <div class="form-group">
                             <label for="deleteMonthSelect">Bulan</label>
                             <select class="form-control" id="deleteMonthSelect">
@@ -359,7 +362,7 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                        <button class="btn btn-danger" type="button" id="btn-confirm-delete">Delete Data</button>
+                        <button class="btn btn-danger" type="button" id="btn-confirm-delete">Hapus Data</button>
                     </div>
                 </div>
             </div>
