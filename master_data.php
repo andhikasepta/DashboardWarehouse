@@ -101,6 +101,9 @@
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="rack-tab" data-toggle="tab" href="#rack-data" role="tab" aria-controls="rack-data" aria-selected="false">Data Utilisasi Rack</a>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="utilisasi-tab" data-toggle="tab" href="#utilisasi-data" role="tab" aria-controls="utilisasi-data" aria-selected="false">Utilisasi Area/Rack</a>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="masterDataTabsContent">
@@ -194,6 +197,77 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <!-- Populated by JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Utilisasi Area/Rack Tab -->
+                        <div class="tab-pane fade" id="utilisasi-data" role="tabpanel" aria-labelledby="utilisasi-tab">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Data Utilisasi Area / Rack</h6>
+                                    <button class="btn btn-success btn-sm" type="button" id="btn-save-utilisasi-all" disabled>
+                                        <i class="fas fa-save mr-1"></i> Simpan Semua
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    
+                                    <!-- Period Selector -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <label class="small font-weight-bold text-gray-600">Bulan <span class="text-danger">*</span></label>
+                                            <select id="utilisasi-month-select" class="form-control form-control-sm">
+                                                <option value="">-- Pilih Bulan --</option>
+                                                <option value="January">January</option>
+                                                <option value="February">February</option>
+                                                <option value="March">March</option>
+                                                <option value="April">April</option>
+                                                <option value="May">May</option>
+                                                <option value="June">June</option>
+                                                <option value="July">July</option>
+                                                <option value="August">August</option>
+                                                <option value="September">September</option>
+                                                <option value="October">October</option>
+                                                <option value="November">November</option>
+                                                <option value="December">December</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="small font-weight-bold text-gray-600">Tahun <span class="text-danger">*</span></label>
+                                            <select id="utilisasi-year-select" class="form-control form-control-sm">
+                                                <option value="">-- Pilih Tahun --</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end">
+                                            <button class="btn btn-primary btn-sm btn-block" id="btn-load-utilisasi" disabled>
+                                                <i class="fas fa-search mr-1"></i> Tampilkan Data
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 d-flex align-items-end justify-content-end" id="utilisasiSearchContainer">
+                                        </div>
+                                    </div>
+
+                                    <div id="utilisasi-table-info" class="text-center text-gray-500 py-4" style="display:block;">
+                                        <i class="fas fa-info-circle fa-2x mb-2 text-gray-300"></i>
+                                        <p class="mb-0">Pilih <strong>Bulan</strong> dan <strong>Tahun</strong> lalu klik <strong>Tampilkan Data</strong> untuk memuat data utilisasi.</p>
+                                    </div>
+                                    
+                                    <div class="table-responsive" id="utilisasi-table-wrapper" style="display:none; max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-bordered table-sm table-hover" id="dataTableUtilisasi" width="100%" cellspacing="0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th style="position: sticky; top: 0; background-color: #f8f9fc; z-index: 1;">Label (Sub Location)</th>
+                                                    <th style="position: sticky; top: 0; background-color: #f8f9fc; z-index: 1;">Rack Group</th>
+                                                    <th style="position: sticky; top: 0; background-color: #f8f9fc; z-index: 1;">Category</th>
+                                                    <th style="position: sticky; top: 0; background-color: #f8f9fc; z-index: 1; width: 120px;">Qty (Unit)</th>
+                                                    <th style="position: sticky; top: 0; background-color: #f8f9fc; z-index: 1; width: 140px;">Capacity (%)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="utilisasi-table-body">
                                                 <!-- Populated by JS -->
                                             </tbody>
                                         </table>
@@ -327,6 +401,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Scripts -->
     <script src="vendor/jquery/jquery.min.js"></script>

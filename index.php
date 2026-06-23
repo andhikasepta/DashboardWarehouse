@@ -267,8 +267,10 @@
                                             </h6>
                                         </div>
                                         <div class="card-body">
-                                            <div class="chart-bar">
-                                                <canvas id="perangkatInChart"></canvas>
+                                            <div class="chart-bar" style="overflow-x: auto; overflow-y: hidden;">
+                                                <div style="min-width: 600px; height: 100%;">
+                                                    <canvas id="perangkatInChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -282,8 +284,10 @@
                                             </h6>
                                         </div>
                                         <div class="card-body">
-                                            <div class="chart-bar">
-                                                <canvas id="perangkatOutChart"></canvas>
+                                            <div class="chart-bar" style="overflow-x: auto; overflow-y: hidden;">
+                                                <div style="min-width: 600px; height: 100%;">
+                                                    <canvas id="perangkatOutChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -662,6 +666,31 @@
                             if (typeof Swal !== 'undefined') {
                                 Swal.fire('Error', 'Failed to load data. Please try again.', 'error');
                             }
+                        })
+                        .finally(function() {
+                            // Fetch yearly IN/OUT for the charts
+                            var parts = period.split(' ');
+                            var yr = parts.length > 1 ? parts[parts.length - 1] : '';
+                            if (yr) {
+                                fetch('api/get_yearly_in_out.php?year=' + encodeURIComponent(yr))
+                                    .then(function(res) { return res.json(); })
+                                    .then(function(resData) {
+                                        if (resData.status === 'success' && resData.data) {
+                                            var mLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                            if (window.perangkatInChart && window.perangkatInChart.data) {
+                                                window.perangkatInChart.data.labels = mLabels;
+                                                window.perangkatInChart.data.datasets[0].data = resData.data.in;
+                                                window.perangkatInChart.update();
+                                            }
+                                            if (window.perangkatOutChart && window.perangkatOutChart.data) {
+                                                window.perangkatOutChart.data.labels = mLabels;
+                                                window.perangkatOutChart.data.datasets[0].data = resData.data.out;
+                                                window.perangkatOutChart.update();
+                                            }
+                                        }
+                                    })
+                                    .catch(function(err) { console.error('Error fetching yearly data:', err); });
+                            }
                         });
                 }
 
@@ -678,45 +707,90 @@
                         var delMonth = document.getElementById('deleteMonthSelect');
                         var delYear = document.getElementById('deleteYearSelect');
                         if (!delMonth || !delMonth.value || !delYear || !delYear.value) {
-                            alert('Please select both Month and Year to delete.');
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Peringatan', 'Please select both Month and Year to delete.', 'warning');
+                            } else {
+                                alert('Please select both Month and Year to delete.');
+                            }
                             return;
                         }
 
                         var periodToDelete = delMonth.value + ' ' + delYear.value;
 
-                        if (!confirm("Are you SURE you want to delete all data for " + periodToDelete.toUpperCase() + "? This cannot be undone.")) {
-                            return;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                title: 'Are you sure?',
+                                text: "You want to delete all data for " + periodToDelete.toUpperCase() + "? This cannot be undone.",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#e74a3b',
+                                cancelButtonColor: '#858796',
+                                confirmButtonText: 'Yes, delete it!'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    executeDelete(periodToDelete);
+                                }
+                            });
+                        } else {
+                            if (confirm("Are you SURE you want to delete all data for " + periodToDelete.toUpperCase() + "? This cannot be undone.")) {
+                                executeDelete(periodToDelete);
+                            }
                         }
+                    });
+                }
 
-                        fetch('api/delete_data.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ periode: periodToDelete })
-                        })
-                            .then(function (response) { return response.json(); })
-                            .then(function (result) {
-                                if (result.status === 'success') {
+                function executeDelete(periodToDelete) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            title: 'Deleting Data...',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                    }
+
+                    fetch('api/delete_data.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ periode: periodToDelete })
+                    })
+                        .then(function (response) { return response.json(); })
+                        .then(function (result) {
+                            if (result.status === 'success') {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Deleted!', result.message, 'success');
+                                } else {
                                     alert(result.message);
-                                    $('#deleteDataModal').modal('hide');
+                                }
+                                $('#deleteDataModal').modal('hide');
 
-                                    var currentPeriodText = document.getElementById('selected-period-text').textContent;
-                                    if (currentPeriodText.toLowerCase() === periodToDelete.toLowerCase()) {
-                                        document.getElementById('selected-period-text').textContent = "PILIH DATA";
-                                        if (window.FormulaController) {
-                                            window.FormulaController.updateDashboardCards([], []);
-                                        }
+                                var currentPeriodText = document.getElementById('selected-period-text').textContent;
+                                if (currentPeriodText.toLowerCase() === periodToDelete.toLowerCase()) {
+                                    document.getElementById('selected-period-text').textContent = "PILIH DATA";
+                                    if (window.FormulaController) {
+                                        window.FormulaController.updateDashboardCards([], []);
                                     }
-                                    // Refresh period selects
-                                    loadPeriods();
+                                }
+                                // Refresh period selects
+                                loadPeriods();
+                            } else {
+                                if (typeof Swal !== 'undefined') {
+                                    Swal.fire('Error', 'Error deleting data: ' + result.message, 'error');
                                 } else {
                                     alert("Error deleting data: " + result.message);
                                 }
-                            })
-                            .catch(function (error) {
-                                console.error('Error:', error);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error('Error:', error);
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire('Error', 'Failed to delete data.', 'error');
+                            } else {
                                 alert("Failed to delete data.");
-                            });
-                    });
+                            }
+                        });
                 }
             });
         </script>

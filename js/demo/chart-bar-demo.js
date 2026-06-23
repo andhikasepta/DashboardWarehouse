@@ -187,7 +187,7 @@ if (ctxIn) {
       maintainAspectRatio: false,
       layout: { padding: { left: 10, right: 25, top: 25, bottom: 0 } },
       scales: {
-        xAxes: [{ gridLines: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 6 }, maxBarThickness: 25 }],
+        xAxes: [{ gridLines: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 12, autoSkip: false }, maxBarThickness: 25 }],
         yAxes: [{ ticks: { min: 0, maxTicksLimit: 5, padding: 10 }, gridLines: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2], zeroLineBorderDash: [2] } }],
       },
       legend: { display: false },
@@ -232,7 +232,7 @@ if (ctxOut) {
       maintainAspectRatio: false,
       layout: { padding: { left: 10, right: 25, top: 25, bottom: 0 } },
       scales: {
-        xAxes: [{ gridLines: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 6 }, maxBarThickness: 25 }],
+        xAxes: [{ gridLines: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 12, autoSkip: false }, maxBarThickness: 25 }],
         yAxes: [{ ticks: { min: 0, maxTicksLimit: 5, padding: 10 }, gridLines: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2], zeroLineBorderDash: [2] } }],
       },
       legend: { display: false },

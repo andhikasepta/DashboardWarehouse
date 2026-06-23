@@ -136,6 +136,8 @@
             if (window.myBarChart && window.myBarChart.data) { window.myBarChart.data.labels = []; window.myBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.myBarChart.update(); }
             if (window.myHorizontalBarChart && window.myHorizontalBarChart.data) { window.myHorizontalBarChart.data.labels = []; window.myHorizontalBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.myHorizontalBarChart.update(); }
             if (window.agingBarChart && window.agingBarChart.data) { window.agingBarChart.data.labels = []; window.agingBarChart.data.datasets.forEach(function(d) { d.data = []; }); window.agingBarChart.update(); }
+            if (window.perangkatInChart && window.perangkatInChart.data) { window.perangkatInChart.data.labels = []; window.perangkatInChart.data.datasets.forEach(function(d) { d.data = []; }); window.perangkatInChart.update(); }
+            if (window.perangkatOutChart && window.perangkatOutChart.data) { window.perangkatOutChart.data.labels = []; window.perangkatOutChart.data.datasets.forEach(function(d) { d.data = []; }); window.perangkatOutChart.update(); }
             
             // Clear table
             var tbody = document.getElementById('table-utilisasi-area-body');
@@ -166,15 +168,15 @@
         // These cards are populated by the UTILISASI AREA / RACK table section (section 9) below.
         // Helper for Utilisasi progress bar colors
         function getUtilisasiClass(percent) {
-            if (percent <= 70) return 'bg-success';
-            if (percent <= 90) return 'bg-warning';
+            if (percent <= 50) return 'bg-success';
+            if (percent <= 75) return 'bg-warning';
             return 'bg-danger';
         }
 
         // Helper for Free Space progress bar colors
         function getFreeSpaceClass(percent) {
-            if (percent <= 29) return 'bg-danger';
-            if (percent <= 59) return 'bg-warning';
+            if (percent <= 24) return 'bg-danger';
+            if (percent <= 49) return 'bg-warning';
             return 'bg-success';
         }
 
@@ -340,20 +342,16 @@
         }
         
         var pinTitle = document.getElementById('perangkat-in-title-period');
-        if (pinTitle) pinTitle.textContent = periodText;
-        var poutTitle = document.getElementById('perangkat-out-title-period');
-        if (poutTitle) poutTitle.textContent = periodText;
-        
-        if (window.perangkatInChart && window.perangkatInChart.data) {
-            window.perangkatInChart.data.labels = [periodText];
-            window.perangkatInChart.data.datasets[0].data = [countIn];
-            window.perangkatInChart.update();
+        if (pinTitle) {
+            var parts = periodText.split(' ');
+            var yr = parts.length > 1 ? parts[parts.length - 1] : periodText;
+            pinTitle.textContent = "Tahun " + yr;
         }
-        
-        if (window.perangkatOutChart && window.perangkatOutChart.data) {
-            window.perangkatOutChart.data.labels = [periodText];
-            window.perangkatOutChart.data.datasets[0].data = [countOut];
-            window.perangkatOutChart.update();
+        var poutTitle = document.getElementById('perangkat-out-title-period');
+        if (poutTitle) {
+            var parts = periodText.split(' ');
+            var yr = parts.length > 1 ? parts[parts.length - 1] : periodText;
+            poutTitle.textContent = "Tahun " + yr;
         }
 
         // 9. AGING PERANGKAT (agingBarChart)
@@ -401,139 +399,161 @@
             }
         }
 
-        // 9. UTILISASI AREA / RACK TABLE
+        // 9. UTILISASI AREA / RACK TABLE (Manual Input Data)
         var tbody = document.getElementById('table-utilisasi-area-body');
         if (tbody) {
             tbody.replaceChildren(); // clear first
             
-            // Fetch Rack Master data to know total slots
-            fetch('api/get_rack_data.php')
+            // Determine current period from the selected period text
+            var currentPeriodEl = document.getElementById('selected-period-text');
+            var currentPeriodStr = currentPeriodEl ? currentPeriodEl.textContent.trim() : '';
+            
+            // Parse "JUNE 2026" or "June 2026" into month and year
+            var periodMonth = '';
+            var periodYear = '';
+            if (currentPeriodStr && currentPeriodStr !== 'PILIH DATA' && currentPeriodStr !== '-') {
+                var periodParts = currentPeriodStr.split(' ');
+                if (periodParts.length >= 2) {
+                    // Capitalize first letter, lowercase rest for API
+                    var rawMonth = periodParts[0];
+                    periodMonth = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1).toLowerCase();
+                    periodYear = periodParts[1];
+                }
+            }
+            
+            // Fetch manual utilisasi data for the selected period
+            var utilisasiUrl = 'api/get_rack_utilisasi.php';
+            if (periodMonth && periodYear) {
+                utilisasiUrl += '?month=' + encodeURIComponent(periodMonth) + '&year=' + encodeURIComponent(periodYear);
+            }
+            
+            fetch(utilisasiUrl)
                 .then(function(response) { return response.json(); })
-                .then(function(rackResult) {
-                    var masterRackData = (rackResult.status === 'success' && rackResult.data) ? rackResult.data : [];
+                .then(function(utilResult) {
+                    var utilData = (utilResult.status === 'success' && utilResult.data) ? utilResult.data : [];
                     
-                    // 1. Calculate Total Slots per Rack from master data
-                    var masterRackGroups = {};
-                    for (var i = 0; i < masterRackData.length; i++) {
-                        var row = masterRackData[i];
-                        var rName = String(row.rack || 'Unknown').trim();
-                        if (!masterRackGroups[rName]) {
-                            masterRackGroups[rName] = { totalSlots: 0, labels: {} };
+                    // Group by rack_group for display
+                    var rackGroups = {};
+                    for (var i = 0; i < utilData.length; i++) {
+                        var row = utilData[i];
+                        var rackName = String(row.rack_group || row.label || 'Unknown').trim();
+                        if (!rackGroups[rackName]) {
+                            rackGroups[rackName] = { totalQty: 0, capacities: [], count: 0 };
                         }
-                        masterRackGroups[rName].totalSlots++;
-                        if (row.label) {
-                            masterRackGroups[rName].labels[String(row.label).trim().toLowerCase()] = true;
-                        }
+                        rackGroups[rackName].totalQty += parseInt(row.qty) || 0;
+                        rackGroups[rackName].capacities.push(parseFloat(row.capacity) || 0);
+                        rackGroups[rackName].count++;
                     }
-
-                    // 2. Calculate Used Slots per Rack from asset data
-                    var usedSlotsPerRack = {};
-                    var subLocationCol = findColumnByKeyword(headers, ['sub_location', 'sub location', 'so_location', 'label', 'lokasi', 'location']);
                     
-                    if (subLocationCol && sheetData.length > 0) {
-                        for (var j = 0; j < sheetData.length; j++) {
-                            var assetSubLoc = String(sheetData[j][subLocationCol] || '').trim().toLowerCase();
-                            if (!assetSubLoc) continue;
-                            
-                            // Find which rack this sub_location belongs to
-                            for (var rName in masterRackGroups) {
-                                if (masterRackGroups[rName].labels[assetSubLoc]) {
-                                    if (!usedSlotsPerRack[rName]) usedSlotsPerRack[rName] = 0;
-                                    usedSlotsPerRack[rName]++;
-                                    break; // asset can only be in one slot
-                                }
-                            }
-                        }
-                    }
-
-                    // 3. If there is no master data, fallback to old logic?
-                    // Let's just show what's in master data. If master is empty, show empty.
-                    var rackNames = Object.keys(masterRackGroups);
+                    var rackNames = Object.keys(rackGroups);
                     rackNames.sort();
-
+                    
                     var greenCount = 0;
                     var yellowCount = 0;
                     var redCount = 0;
                     var rackCapacities = [];
-
+                    
                     for (var q = 0; q < rackNames.length; q++) {
                         var rName = rackNames[q];
-                        var totalSlots = masterRackGroups[rName].totalSlots;
-                        var usedSlots = usedSlotsPerRack[rName] || 0;
+                        var group = rackGroups[rName];
+                        var totalQty = group.totalQty;
                         
-                        var capacity = totalSlots > 0 ? Math.round((usedSlots / totalSlots) * 100) : 0;
-                        if (capacity > 100) capacity = 100; // cap at 100% just in case
+                        // Average capacity across all labels in this rack group
+                        var avgCap = 0;
+                        if (group.capacities.length > 0) {
+                            var sumC = 0;
+                            for (var c = 0; c < group.capacities.length; c++) {
+                                sumC += group.capacities[c];
+                            }
+                            avgCap = Math.round(sumC / group.capacities.length);
+                        }
+                        if (avgCap > 100) avgCap = 100;
                         
-                        rackCapacities.push(capacity);
-
+                        rackCapacities.push(avgCap);
+                        
                         var barColorClass;
-                        if (capacity <= 70) {
+                        if (avgCap <= 50) {
                             barColorClass = 'bg-success';
                             greenCount++;
-                        } else if (capacity <= 90) {
+                        } else if (avgCap <= 75) {
                             barColorClass = 'bg-warning';
                             yellowCount++;
                         } else {
                             barColorClass = 'bg-danger';
                             redCount++;
                         }
-
+                        
                         var tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        tr.style.position = 'relative';
+                        tr.setAttribute('title', rName + '  |  Qty: ' + totalQty + ' unit  |  Capacity: ' + avgCap + '%');
+                        tr.setAttribute('data-toggle', 'tooltip');
+                        tr.setAttribute('data-placement', 'top');
+                        
+                        // Rack/Area name
                         var tdName = document.createElement('td');
                         tdName.textContent = rName;
                         tdName.style.fontSize = '0.85rem';
                         tdName.style.whiteSpace = 'nowrap';
-
+                        
+                        // Capacity column with progress bar
                         var tdCapacity = document.createElement('td');
                         var progressWrap = document.createElement('div');
                         progressWrap.className = 'd-flex align-items-center';
-
+                        
                         var percentLabel = document.createElement('span');
                         percentLabel.className = 'mr-2 font-weight-bold';
                         percentLabel.style.minWidth = '38px';
                         percentLabel.style.fontSize = '0.8rem';
-                        percentLabel.textContent = capacity + '%';
-
+                        percentLabel.textContent = avgCap + '%';
+                        
                         var progressOuter = document.createElement('div');
                         progressOuter.className = 'progress progress-sm flex-grow-1';
                         progressOuter.style.height = '10px';
                         progressOuter.style.borderRadius = '5px';
-
+                        
                         var progressInner = document.createElement('div');
                         progressInner.className = 'progress-bar ' + barColorClass;
                         progressInner.setAttribute('role', 'progressbar');
-                        progressInner.style.width = capacity + '%';
+                        progressInner.style.width = avgCap + '%';
                         progressInner.style.borderRadius = '5px';
                         progressInner.style.transition = 'width 0.6s ease';
-
+                        
                         progressOuter.appendChild(progressInner);
                         progressWrap.appendChild(percentLabel);
                         progressWrap.appendChild(progressOuter);
                         tdCapacity.appendChild(progressWrap);
-
+                        
                         tr.appendChild(tdName);
                         tr.appendChild(tdCapacity);
                         tbody.appendChild(tr);
                     }
-
+                    
+                    // Initialize Bootstrap tooltips on the rendered rows
+                    if (typeof $ !== 'undefined') {
+                        $('#table-utilisasi-area-body [data-toggle="tooltip"]').tooltip({ 
+                            template: '<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner bg-white text-dark border shadow-sm"></div></div>'
+                        });
+                    }
+                    
                     // Update colored dot summary
                     var dotContainer = document.getElementById('rack-status-dots');
                     if (dotContainer) {
                         dotContainer.replaceChildren();
-
+                        
                         function createDotBadge(colorClass, count) {
                             var badge = document.createElement('span');
                             badge.className = 'badge badge-pill mr-2 d-flex align-items-center';
                             badge.style.fontSize = '0.75rem';
                             badge.style.padding = '4px 10px';
-
+                            
                             var dot = document.createElement('span');
                             dot.style.display = 'inline-block';
                             dot.style.width = '10px';
                             dot.style.height = '10px';
                             dot.style.borderRadius = '50%';
                             dot.style.marginRight = '5px';
-
+                            
                             if (colorClass === 'success') {
                                 dot.style.backgroundColor = '#1cc88a';
                                 badge.style.backgroundColor = 'rgba(28, 200, 138, 0.15)';
@@ -547,17 +567,17 @@
                                 badge.style.backgroundColor = 'rgba(231, 74, 59, 0.15)';
                                 badge.style.color = '#e74a3b';
                             }
-
+                            
                             badge.appendChild(dot);
                             badge.appendChild(document.createTextNode(count));
                             return badge;
                         }
-
+                        
                         dotContainer.appendChild(createDotBadge('success', greenCount));
                         dotContainer.appendChild(createDotBadge('warning', yellowCount));
                         dotContainer.appendChild(createDotBadge('danger', redCount));
                     }
-
+                    
                     // Update UTILISASI SPACE & FREE SPACE cards
                     var avgCapacity = 0;
                     if (rackCapacities.length > 0) {
@@ -567,22 +587,22 @@
                         }
                         avgCapacity = Math.round(sumCap / rackCapacities.length);
                     }
-
+                    
                     var utilPercent = avgCapacity;
                     var freePercent = 100 - utilPercent;
-
+                    
                     var cardUtilText = document.getElementById('card-utilisasi-space-text');
                     var cardUtilBar = document.getElementById('card-utilisasi-space-bar');
                     var cardFreeText = document.getElementById('card-free-space-text');
                     var cardFreeBar = document.getElementById('card-free-space-bar');
-
+                    
                     if (cardUtilText) cardUtilText.textContent = utilPercent + '%';
                     if (cardUtilBar) {
                         cardUtilBar.style.width = utilPercent + '%';
                         cardUtilBar.setAttribute('aria-valuenow', utilPercent);
                         cardUtilBar.className = 'progress-bar ' + getUtilisasiClass(utilPercent);
                     }
-
+                    
                     if (cardFreeText) cardFreeText.textContent = freePercent + '%';
                     if (cardFreeBar) {
                         cardFreeBar.style.width = freePercent + '%';
@@ -590,7 +610,7 @@
                         cardFreeBar.className = 'progress-bar ' + getFreeSpaceClass(freePercent);
                     }
                 })
-                .catch(function(err) { console.error('Error fetching rack data:', err); });
+                .catch(function(err) { console.error('Error fetching utilisasi data:', err); });
         }
     };
 
